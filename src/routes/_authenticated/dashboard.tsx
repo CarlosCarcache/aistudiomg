@@ -7,6 +7,8 @@ import {
   FolderKanban,
   ArrowRight,
 } from "lucide-react";
+import { PageHeader } from "@/views/PageHeader";
+import { EmptyState } from "@/views/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -22,14 +24,10 @@ const quick = [
 function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Bienvenido a tu <span className="brand-text">estudio</span>
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Empieza con una herramienta o abre un proyecto reciente.
-        </p>
-      </div>
+      <PageHeader
+        title={<>Bienvenido a tu <span className="brand-text">estudio</span></>}
+        description="Empieza con una herramienta o abre un proyecto reciente."
+      />
 
       <section>
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">Accesos rápidos</h2>
@@ -58,13 +56,11 @@ function Dashboard() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-dashed border-border bg-card/40 p-10 text-center">
-        <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h3 className="mt-3 font-medium">Aún no tienes proyectos</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cuando guardes diseños aparecerán aquí para reutilizarlos.
-        </p>
-      </section>
+      <EmptyState
+        icon={FolderKanban}
+        title="Aún no tienes proyectos"
+        description="Cuando guardes diseños aparecerán aquí para reutilizarlos."
+      />
     </div>
   );
 }
