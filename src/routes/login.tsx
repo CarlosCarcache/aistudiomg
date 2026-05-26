@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/input-otp";
 import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { supabase } from "@/integrations/supabase/client";
+import { authController } from "@/controllers/auth.controller";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -26,7 +26,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    authController.getSession().then((session) => {
       if (session) navigate({ to: "/dashboard" });
     });
   }, [navigate]);
@@ -35,10 +35,7 @@ function LoginPage() {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: true },
-    });
+    const { error } = await authController.sendOtp(email.trim());
     setLoading(false);
     if (error) {
       toast.error("No pudimos enviar el código", { description: error.message });
@@ -52,11 +49,7 @@ function LoginPage() {
 
   const verify = async (value: string) => {
     setLoading(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: value,
-      type: "email",
-    });
+    const { error } = await authController.verifyOtp(email.trim(), value);
     setLoading(false);
     if (error) {
       toast.error("Código incorrecto", { description: error.message });

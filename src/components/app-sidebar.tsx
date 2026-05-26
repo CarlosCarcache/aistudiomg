@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BrandLogo } from "./brand-logo";
 import { Button } from "./ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { authController } from "@/controllers/auth.controller";
 
 const tools = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -97,7 +97,7 @@ export function AppSidebar() {
           size="sm"
           className="justify-start gap-2"
           onClick={async () => {
-            await supabase.auth.signOut();
+            await authController.signOut();
             window.location.href = "/login";
           }}
         >
