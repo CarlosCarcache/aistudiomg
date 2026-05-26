@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, ShieldCheck, Trash2, Plus } from "lucide-react";
+import { Loader2, Search, Trash2, Plus } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,6 @@ function AdminUsersPage() {
 
       <main className="flex-1 space-y-6 p-6">
         <PageHeader
-          icon={ShieldCheck}
           title="Usuarios y roles"
           description="Asigna o quita roles. Solo administradores pueden modificar esta información."
         />
