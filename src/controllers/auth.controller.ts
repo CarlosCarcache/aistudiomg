@@ -6,7 +6,7 @@ export const authController = {
   async sendOtp(email: string) {
     return supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { shouldCreateUser: true },
     });
   },
 

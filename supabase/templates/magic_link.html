@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#ffffff; padding:24px; color:#0f172a;">
+    <div style="max-width:480px; margin:0 auto; border:1px solid #ede9fe; border-radius:16px; padding:28px;">
+      <h1 style="margin:0 0 8px; font-size:20px;">AI Studio MG</h1>
+      <p style="margin:0 0 16px; color:#64748b;">Tu código de verificación de un solo uso:</p>
+      <div style="font-size:32px; letter-spacing:8px; font-weight:700; text-align:center; padding:16px; background:#faf5ff; color:#7c3aed; border-radius:12px;">
+        {{ .Token }}
+      </div>
+      <p style="margin:20px 0 8px; color:#64748b; font-size:14px;">Este código vence en 1 hora. Si no fuiste tú, ignora este mensaje.</p>
+      <p style="margin:16px 0 0; color:#94a3b8; font-size:12px;">También puedes iniciar sesión con este enlace: <a href="{{ .ConfirmationURL }}">Acceder</a></p>
+    </div>
+  </body>
+</html>
