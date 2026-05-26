@@ -38,7 +38,8 @@ function LoginPage() {
     const { error } = await authController.sendOtp(email.trim());
     setLoading(false);
     if (error) {
-      toast.error("No pudimos enviar el código", { description: error.message });
+      console.error("[login] OTP send error:", error);
+      toast.error("No pudimos enviar el código", { description: "Verifica tu correo e intenta de nuevo." });
       return;
     }
     toast.success("Código enviado", {
@@ -52,7 +53,8 @@ function LoginPage() {
     const { error } = await authController.verifyOtp(email.trim(), value);
     setLoading(false);
     if (error) {
-      toast.error("Código incorrecto", { description: error.message });
+      console.error("[login] OTP verify error:", error);
+      toast.error("Código incorrecto", { description: "Revisa el código e intenta de nuevo." });
       return;
     }
     toast.success("Bienvenido a AI Studio MG");

@@ -1,22 +1,21 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { authController } from "@/controllers/auth.controller";
 
 export const Route = createFileRoute("/_authenticated")({
+  beforeLoad: async () => {
+    const session = await authController.getSession();
+    if (!session) throw redirect({ to: "/login" });
+  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !user) navigate({ to: "/login" });
-  }, [user, loading, navigate]);
 
   if (loading || !user) {
     return (

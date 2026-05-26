@@ -43,8 +43,12 @@ function SettingsPage() {
       .update({ display_name: name })
       .eq("id", user.id);
     setSaving(false);
-    if (error) toast.error("No se pudo guardar", { description: error.message });
-    else toast.success("Perfil actualizado");
+    if (error) {
+      console.error("[settings] profile update error:", error);
+      toast.error("No se pudo guardar", { description: "Intenta de nuevo más tarde." });
+    } else {
+      toast.success("Perfil actualizado");
+    }
   };
 
   return (
