@@ -8,6 +8,7 @@ import {
   ImagePlus,
   Settings,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,6 +26,7 @@ import {
 import { BrandLogo } from "./brand-logo";
 import { Button } from "./ui/button";
 import { authController } from "@/controllers/auth.controller";
+import { useAuth } from "@/hooks/use-auth";
 
 const tools = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -44,6 +46,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const path = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) => path === url || path.startsWith(url + "/");
+  const { roles } = useAuth();
+  const isAdmin = roles.includes("admin");
 
   return (
     <Sidebar collapsible="icon">
@@ -89,7 +93,26 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administración</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/admin/users")} tooltip="Usuarios y roles">
+                    <Link to="/admin/users" className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4" />
+                      <span>Usuarios y roles</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
+
 
       <SidebarFooter className="border-t border-sidebar-border">
         <Button
