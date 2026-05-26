@@ -48,7 +48,7 @@ function Projects() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => (
             <div key={p.id} className="rounded-2xl border border-border bg-card p-5">
-              <div className="font-medium">{p.name}</div>
+              <div className="font-medium">{p.title}</div>
               <div className="mt-1 text-xs text-muted-foreground">
                 {new Date(p.created_at).toLocaleDateString()}
               </div>
