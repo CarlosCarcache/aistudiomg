@@ -38,7 +38,8 @@ function LoginPage() {
     const { error } = await authController.sendOtp(email.trim());
     setLoading(false);
     if (error) {
-      toast.error("No pudimos enviar el código", { description: error.message });
+      console.error("[login] OTP send error:", error);
+      toast.error("No pudimos enviar el código", { description: "Verifica tu correo e intenta de nuevo." });
       return;
     }
     toast.success("Código enviado", {
