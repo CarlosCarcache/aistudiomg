@@ -46,6 +46,8 @@ function SettingsPage() {
     if (error) {
       console.error("[settings] profile update error:", error);
       toast.error("No se pudo guardar", { description: "Intenta de nuevo más tarde." });
+    } else {
+      toast.success("Perfil actualizado");
     }
   };
 
