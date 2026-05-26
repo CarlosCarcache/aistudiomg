@@ -1,25 +1,61 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FolderKanban, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FolderKanban, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/views/PageHeader";
+import { EmptyState } from "@/views/EmptyState";
+import { projectsController } from "@/controllers/projects.controller";
+import type { Project } from "@/models/types";
 
 export const Route = createFileRoute("/_authenticated/projects")({
   component: Projects,
 });
 
 function Projects() {
+  const [items, setItems] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    projectsController
+      .list()
+      .then(setItems)
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
-          <p className="text-sm text-muted-foreground">Gestiona y reutiliza tus diseños guardados.</p>
+      <PageHeader
+        title="Proyectos"
+        description="Gestiona y reutiliza tus diseños guardados."
+        actions={
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" /> Nuevo proyecto
+          </Button>
+        }
+      />
+
+      {loading ? (
+        <div className="grid place-items-center py-20 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
         </div>
-        <Button className="gap-2"><Plus className="h-4 w-4" /> Nuevo proyecto</Button>
-      </div>
-      <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
-        <FolderKanban className="h-10 w-10 text-muted-foreground" />
-        <p className="mt-3 text-sm text-muted-foreground">Disponible en la siguiente fase.</p>
-      </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={FolderKanban}
+          title="Aún no tienes proyectos"
+          description="Crea tu primer proyecto para empezar a guardar diseños y reutilizarlos."
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((p) => (
+            <div key={p.id} className="rounded-2xl border border-border bg-card p-5">
+              <div className="font-medium">{p.name}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {new Date(p.created_at).toLocaleDateString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
