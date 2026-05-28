@@ -12,13 +12,26 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GTokenRouteImport } from './routes/g.$token'
 import { Route as AuthenticatedVectorizeRouteImport } from './routes/_authenticated/vectorize'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
+import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedHalftoneRouteImport } from './routes/_authenticated/halftone'
 import { Route as AuthenticatedGenerateRouteImport } from './routes/_authenticated/generate'
+import { Route as AuthenticatedGalleryRouteImport } from './routes/_authenticated/gallery'
+import { Route as AuthenticatedEmployeesRouteImport } from './routes/_authenticated/employees'
 import { Route as AuthenticatedEditorRouteImport } from './routes/_authenticated/editor'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCropRouteImport } from './routes/_authenticated/crop'
+import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
+import { Route as AuthenticatedBeforeAfterRouteImport } from './routes/_authenticated/before-after'
+import { Route as AuthenticatedBackupsRouteImport } from './routes/_authenticated/backups'
+import { Route as AuthenticatedBackgroundRouteImport } from './routes/_authenticated/background'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 
 const LoginRoute = LoginRouteImport.update({
@@ -35,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GTokenRoute = GTokenRouteImport.update({
+  id: '/g/$token',
+  path: '/g/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedVectorizeRoute = AuthenticatedVectorizeRouteImport.update({
   id: '/vectorize',
   path: '/vectorize',
@@ -45,14 +63,44 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
+  id: '/quality',
+  path: '/quality',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPortfolioRoute = AuthenticatedPortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHalftoneRoute = AuthenticatedHalftoneRouteImport.update({
+  id: '/halftone',
+  path: '/halftone',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedGenerateRoute = AuthenticatedGenerateRouteImport.update({
   id: '/generate',
   path: '/generate',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedGalleryRoute = AuthenticatedGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedEmployeesRoute = AuthenticatedEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedEditorRoute = AuthenticatedEditorRouteImport.update({
@@ -65,9 +113,40 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCropRoute = AuthenticatedCropRouteImport.update({
+  id: '/crop',
+  path: '/crop',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBeforeAfterRoute =
+  AuthenticatedBeforeAfterRouteImport.update({
+    id: '/before-after',
+    path: '/before-after',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackupsRoute = AuthenticatedBackupsRouteImport.update({
+  id: '/backups',
+  path: '/backups',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBackgroundRoute = AuthenticatedBackgroundRouteImport.update({
+  id: '/background',
+  path: '/background',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
@@ -79,25 +158,51 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/background': typeof AuthenticatedBackgroundRoute
+  '/backups': typeof AuthenticatedBackupsRoute
+  '/before-after': typeof AuthenticatedBeforeAfterRoute
+  '/catalog': typeof AuthenticatedCatalogRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/clients': typeof AuthenticatedClientsRoute
+  '/crop': typeof AuthenticatedCropRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/employees': typeof AuthenticatedEmployeesRoute
+  '/gallery': typeof AuthenticatedGalleryRoute
   '/generate': typeof AuthenticatedGenerateRoute
+  '/halftone': typeof AuthenticatedHalftoneRoute
+  '/orders': typeof AuthenticatedOrdersRoute
+  '/portfolio': typeof AuthenticatedPortfolioRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
+  '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/background': typeof AuthenticatedBackgroundRoute
+  '/backups': typeof AuthenticatedBackupsRoute
+  '/before-after': typeof AuthenticatedBeforeAfterRoute
+  '/catalog': typeof AuthenticatedCatalogRoute
   '/chat': typeof AuthenticatedChatRoute
+  '/clients': typeof AuthenticatedClientsRoute
+  '/crop': typeof AuthenticatedCropRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/editor': typeof AuthenticatedEditorRoute
+  '/employees': typeof AuthenticatedEmployeesRoute
+  '/gallery': typeof AuthenticatedGalleryRoute
   '/generate': typeof AuthenticatedGenerateRoute
+  '/halftone': typeof AuthenticatedHalftoneRoute
+  '/orders': typeof AuthenticatedOrdersRoute
+  '/portfolio': typeof AuthenticatedPortfolioRoute
   '/projects': typeof AuthenticatedProjectsRoute
+  '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
+  '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
 export interface FileRoutesById {
@@ -105,13 +210,26 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/background': typeof AuthenticatedBackgroundRoute
+  '/_authenticated/backups': typeof AuthenticatedBackupsRoute
+  '/_authenticated/before-after': typeof AuthenticatedBeforeAfterRoute
+  '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/clients': typeof AuthenticatedClientsRoute
+  '/_authenticated/crop': typeof AuthenticatedCropRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/editor': typeof AuthenticatedEditorRoute
+  '/_authenticated/employees': typeof AuthenticatedEmployeesRoute
+  '/_authenticated/gallery': typeof AuthenticatedGalleryRoute
   '/_authenticated/generate': typeof AuthenticatedGenerateRoute
+  '/_authenticated/halftone': typeof AuthenticatedHalftoneRoute
+  '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
+  '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/vectorize': typeof AuthenticatedVectorizeRoute
+  '/g/$token': typeof GTokenRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
 }
 export interface FileRouteTypes {
@@ -119,38 +237,77 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/background'
+    | '/backups'
+    | '/before-after'
+    | '/catalog'
     | '/chat'
+    | '/clients'
+    | '/crop'
     | '/dashboard'
     | '/editor'
+    | '/employees'
+    | '/gallery'
     | '/generate'
+    | '/halftone'
+    | '/orders'
+    | '/portfolio'
     | '/projects'
+    | '/quality'
     | '/settings'
     | '/vectorize'
+    | '/g/$token'
     | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/background'
+    | '/backups'
+    | '/before-after'
+    | '/catalog'
     | '/chat'
+    | '/clients'
+    | '/crop'
     | '/dashboard'
     | '/editor'
+    | '/employees'
+    | '/gallery'
     | '/generate'
+    | '/halftone'
+    | '/orders'
+    | '/portfolio'
     | '/projects'
+    | '/quality'
     | '/settings'
     | '/vectorize'
+    | '/g/$token'
     | '/admin/users'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/background'
+    | '/_authenticated/backups'
+    | '/_authenticated/before-after'
+    | '/_authenticated/catalog'
     | '/_authenticated/chat'
+    | '/_authenticated/clients'
+    | '/_authenticated/crop'
     | '/_authenticated/dashboard'
     | '/_authenticated/editor'
+    | '/_authenticated/employees'
+    | '/_authenticated/gallery'
     | '/_authenticated/generate'
+    | '/_authenticated/halftone'
+    | '/_authenticated/orders'
+    | '/_authenticated/portfolio'
     | '/_authenticated/projects'
+    | '/_authenticated/quality'
     | '/_authenticated/settings'
     | '/_authenticated/vectorize'
+    | '/g/$token'
     | '/_authenticated/admin/users'
   fileRoutesById: FileRoutesById
 }
@@ -158,6 +315,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  GTokenRoute: typeof GTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -183,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/g/$token': {
+      id: '/g/$token'
+      path: '/g/$token'
+      fullPath: '/g/$token'
+      preLoaderRoute: typeof GTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/vectorize': {
       id: '/_authenticated/vectorize'
       path: '/vectorize'
@@ -197,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/quality': {
+      id: '/_authenticated/quality'
+      path: '/quality'
+      fullPath: '/quality'
+      preLoaderRoute: typeof AuthenticatedQualityRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects': {
       id: '/_authenticated/projects'
       path: '/projects'
@@ -204,11 +376,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/portfolio': {
+      id: '/_authenticated/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof AuthenticatedPortfolioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/halftone': {
+      id: '/_authenticated/halftone'
+      path: '/halftone'
+      fullPath: '/halftone'
+      preLoaderRoute: typeof AuthenticatedHalftoneRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/generate': {
       id: '/_authenticated/generate'
       path: '/generate'
       fullPath: '/generate'
       preLoaderRoute: typeof AuthenticatedGenerateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/gallery': {
+      id: '/_authenticated/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof AuthenticatedGalleryRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/employees': {
+      id: '/_authenticated/employees'
+      path: '/employees'
+      fullPath: '/employees'
+      preLoaderRoute: typeof AuthenticatedEmployeesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/editor': {
@@ -225,11 +432,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/crop': {
+      id: '/_authenticated/crop'
+      path: '/crop'
+      fullPath: '/crop'
+      preLoaderRoute: typeof AuthenticatedCropRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clients': {
+      id: '/_authenticated/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof AuthenticatedClientsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/chat': {
       id: '/_authenticated/chat'
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/catalog': {
+      id: '/_authenticated/catalog'
+      path: '/catalog'
+      fullPath: '/catalog'
+      preLoaderRoute: typeof AuthenticatedCatalogRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/before-after': {
+      id: '/_authenticated/before-after'
+      path: '/before-after'
+      fullPath: '/before-after'
+      preLoaderRoute: typeof AuthenticatedBeforeAfterRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/backups': {
+      id: '/_authenticated/backups'
+      path: '/backups'
+      fullPath: '/backups'
+      preLoaderRoute: typeof AuthenticatedBackupsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/background': {
+      id: '/_authenticated/background'
+      path: '/background'
+      fullPath: '/background'
+      preLoaderRoute: typeof AuthenticatedBackgroundRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/users': {
@@ -243,22 +492,46 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBackgroundRoute: typeof AuthenticatedBackgroundRoute
+  AuthenticatedBackupsRoute: typeof AuthenticatedBackupsRoute
+  AuthenticatedBeforeAfterRoute: typeof AuthenticatedBeforeAfterRoute
+  AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
+  AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
+  AuthenticatedCropRoute: typeof AuthenticatedCropRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEditorRoute: typeof AuthenticatedEditorRoute
+  AuthenticatedEmployeesRoute: typeof AuthenticatedEmployeesRoute
+  AuthenticatedGalleryRoute: typeof AuthenticatedGalleryRoute
   AuthenticatedGenerateRoute: typeof AuthenticatedGenerateRoute
+  AuthenticatedHalftoneRoute: typeof AuthenticatedHalftoneRoute
+  AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
+  AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedVectorizeRoute: typeof AuthenticatedVectorizeRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBackgroundRoute: AuthenticatedBackgroundRoute,
+  AuthenticatedBackupsRoute: AuthenticatedBackupsRoute,
+  AuthenticatedBeforeAfterRoute: AuthenticatedBeforeAfterRoute,
+  AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
+  AuthenticatedClientsRoute: AuthenticatedClientsRoute,
+  AuthenticatedCropRoute: AuthenticatedCropRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEditorRoute: AuthenticatedEditorRoute,
+  AuthenticatedEmployeesRoute: AuthenticatedEmployeesRoute,
+  AuthenticatedGalleryRoute: AuthenticatedGalleryRoute,
   AuthenticatedGenerateRoute: AuthenticatedGenerateRoute,
+  AuthenticatedHalftoneRoute: AuthenticatedHalftoneRoute,
+  AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
+  AuthenticatedQualityRoute: AuthenticatedQualityRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedVectorizeRoute: AuthenticatedVectorizeRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
@@ -272,6 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  GTokenRoute: GTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

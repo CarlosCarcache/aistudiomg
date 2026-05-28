@@ -7,8 +7,19 @@ import {
   Scissors,
   ImagePlus,
   Settings,
-  LogOut,
   ShieldCheck,
+  CircleDot,
+  Sparkles,
+  Layers,
+  Crop,
+  GitCompare,
+  Images,
+  GalleryHorizontalEnd,
+  BookOpen,
+  Users,
+  ClipboardList,
+  BadgeCheck,
+  DatabaseBackup,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,20 +35,37 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { BrandLogo } from "./brand-logo";
-import { Button } from "./ui/button";
-import { authController } from "@/controllers/auth.controller";
 import { useAuth } from "@/hooks/use-auth";
 
-const tools = [
+type Item = { title: string; url: string; icon: typeof LayoutDashboard };
+
+const general: Item[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Proyectos", url: "/projects", icon: FolderKanban },
   { title: "Chat con IA", url: "/chat", icon: MessageSquare },
+];
+
+const tools: Item[] = [
   { title: "Generar imagen", url: "/generate", icon: ImagePlus },
   { title: "Vectorizar", url: "/vectorize", icon: Wand2 },
   { title: "Editor de imagen", url: "/editor", icon: Scissors },
+  { title: "Recortes", url: "/crop", icon: Crop },
+  { title: "Fondos", url: "/background", icon: Layers },
+  { title: "Semitono (DTF)", url: "/halftone", icon: CircleDot },
+  { title: "Mejorar calidad", url: "/quality", icon: Sparkles },
+  { title: "Antes / Después", url: "/before-after", icon: GitCompare },
 ];
 
-const account = [
+const business: Item[] = [
+  { title: "Galería", url: "/gallery", icon: Images },
+  { title: "Portafolio", url: "/portfolio", icon: GalleryHorizontalEnd },
+  { title: "Catálogo", url: "/catalog", icon: BookOpen },
+  { title: "Clientes", url: "/clients", icon: Users },
+  { title: "Pedidos", url: "/orders", icon: ClipboardList },
+  { title: "Empleados", url: "/employees", icon: BadgeCheck },
+];
+
+const account: Item[] = [
   { title: "Configuración", url: "/settings", icon: Settings },
 ];
 
@@ -49,50 +77,39 @@ export function AppSidebar() {
   const { roles } = useAuth();
   const isAdmin = roles.includes("admin");
 
+  const renderGroup = (label: string, items: Item[]) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.url}>
+              <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                <Link to={item.url} className="flex items-center gap-2">
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center px-2 py-1">
-          {collapsed ? <BrandLogo size="sm" /> : <BrandLogo size="sm" />}
+          <BrandLogo size="sm" />
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Herramientas</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {tools.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Cuenta</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {account.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {renderGroup("General", general)}
+        {renderGroup("Herramientas IA", tools)}
+        {renderGroup("Negocio", business)}
+        {renderGroup("Cuenta", account)}
 
         {isAdmin && (
           <SidebarGroup>
@@ -107,26 +124,26 @@ export function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/backups")} tooltip="Copias de seguridad">
+                    <Link to="/backups" className="flex items-center gap-2">
+                      <DatabaseBackup className="h-4 w-4" />
+                      <span>Copias de seguridad</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
       </SidebarContent>
 
-
       <SidebarFooter className="border-t border-sidebar-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="justify-start gap-2"
-          onClick={async () => {
-            await authController.signOut();
-            window.location.href = "/login";
-          }}
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Cerrar sesión</span>}
-        </Button>
+        {!collapsed && (
+          <p className="px-2 py-2 text-xs text-muted-foreground">
+            Login desactivado temporalmente
+          </p>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
