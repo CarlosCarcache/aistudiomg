@@ -15,6 +15,9 @@ import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/dashboard" });
+  },
   component: Landing,
 });
 
