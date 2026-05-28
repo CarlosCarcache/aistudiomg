@@ -1,29 +1,15 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { authController } from "@/controllers/auth.controller";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
-    const session = await authController.getSession();
-    if (!session) throw redirect({ to: "/login" });
-  },
   component: AuthenticatedLayout,
 });
 
 function AuthenticatedLayout() {
-  const { user, loading } = useAuth();
-
-  if (loading || !user) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-background text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+  const { user } = useAuth();
 
   return (
     <SidebarProvider>
@@ -33,7 +19,7 @@ function AuthenticatedLayout() {
           <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
-              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <span className="text-sm text-muted-foreground">{user?.email ?? "Invitado"}</span>
             </div>
             <ThemeToggle />
           </header>

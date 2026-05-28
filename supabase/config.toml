@@ -1,1 +1,5 @@
 project_id = "bewwwmwnucpynbibmmgx"
+
+[auth.email.template.magic_link]
+subject = "Tu código de acceso a AI Studio MG"
+content_path = "./supabase/templates/magic_link.html"
