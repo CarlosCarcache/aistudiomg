@@ -1,16 +1,10 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { authController } from "@/controllers/auth.controller";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async () => {
-    const session = await authController.getSession();
-    if (!session) throw redirect({ to: "/login" });
-  },
   component: AuthenticatedLayout,
 });
 
