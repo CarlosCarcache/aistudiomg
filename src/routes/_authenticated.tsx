@@ -9,15 +9,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { user, loading } = useAuth();
-
-  if (loading || !user) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-background text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+  const { user } = useAuth();
 
   return (
     <SidebarProvider>
