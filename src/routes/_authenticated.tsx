@@ -19,7 +19,7 @@ function AuthenticatedLayout() {
           <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
-              <span className="text-sm text-muted-foreground">{user.email}</span>
+              <span className="text-sm text-muted-foreground">{user?.email ?? "Invitado"}</span>
             </div>
             <ThemeToggle />
           </header>
