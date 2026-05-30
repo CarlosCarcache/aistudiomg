@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GTokenRouteImport } from './routes/g.$token'
+import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-image'
 import { Route as AuthenticatedVectorizeRouteImport } from './routes/_authenticated/vectorize'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
@@ -51,6 +52,11 @@ const IndexRoute = IndexRouteImport.update({
 const GTokenRoute = GTokenRouteImport.update({
   id: '/g/$token',
   path: '/g/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGenerateImageRoute = ApiGenerateImageRouteImport.update({
+  id: '/api/generate-image',
+  path: '/api/generate-image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedVectorizeRoute = AuthenticatedVectorizeRouteImport.update({
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
+  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
+  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -229,6 +237,7 @@ export interface FileRoutesById {
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/vectorize': typeof AuthenticatedVectorizeRoute
+  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/quality'
     | '/settings'
     | '/vectorize'
+    | '/api/generate-image'
     | '/g/$token'
     | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/quality'
     | '/settings'
     | '/vectorize'
+    | '/api/generate-image'
     | '/g/$token'
     | '/admin/users'
   id:
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/quality'
     | '/_authenticated/settings'
     | '/_authenticated/vectorize'
+    | '/api/generate-image'
     | '/g/$token'
     | '/_authenticated/admin/users'
   fileRoutesById: FileRoutesById
@@ -315,6 +327,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiGenerateImageRoute: typeof ApiGenerateImageRoute
   GTokenRoute: typeof GTokenRoute
 }
 
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/g/$token'
       fullPath: '/g/$token'
       preLoaderRoute: typeof GTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/generate-image': {
+      id: '/api/generate-image'
+      path: '/api/generate-image'
+      fullPath: '/api/generate-image'
+      preLoaderRoute: typeof ApiGenerateImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/vectorize': {
@@ -545,18 +565,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiGenerateImageRoute: ApiGenerateImageRoute,
   GTokenRoute: GTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
