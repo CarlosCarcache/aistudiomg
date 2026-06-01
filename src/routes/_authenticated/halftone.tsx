@@ -154,6 +154,8 @@ function HalftonePage() {
     setDpi(300);
     setContrast(1);
     setBrightness(0);
+    setColorMode("bw");
+    setSolid(false);
   }
 
   function download(format: "png" | "svg" | "jpg") {
