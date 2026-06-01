@@ -252,6 +252,27 @@ function HalftonePage() {
         </div>
 
         <Section title="Color">
+          <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+            <button
+              onClick={() => setColorMode("color")}
+              className={`rounded py-1.5 text-xs font-medium ${colorMode === "color" ? "bg-foreground text-background" : ""}`}
+            >
+              Color
+            </button>
+            <button
+              onClick={() => setColorMode("bw")}
+              className={`rounded py-1.5 text-xs font-medium ${colorMode === "bw" ? "bg-foreground text-background" : ""}`}
+            >
+              Blanco y Negro
+            </button>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2 py-1.5">
+            <div>
+              <p className="text-xs font-medium">Sólido (sin degradados)</p>
+              <p className="text-[10px] text-muted-foreground">B/N puro por umbral</p>
+            </div>
+            <Switch checked={solid} onCheckedChange={setSolid} />
+          </div>
           <ColorRow label="Knockout" value={knockoutColor} onChange={setKnockoutColor} />
           <ColorRow
             label="BG"
