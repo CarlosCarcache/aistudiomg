@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { aiImage, downloadDataUrl, loadImage } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/halftone")({
 
 type Shape = "dot" | "line";
 type Tab = "original" | "preview" | "export" | "mask";
+type ColorMode = "color" | "bw";
 
 const DPI_OPTS = [300, 400, 500, 600, 700, 800];
 
@@ -31,6 +33,8 @@ function HalftonePage() {
   const [dpi, setDpi] = useState(300);
   const [contrast, setContrast] = useState(1);
   const [brightness, setBrightness] = useState(0);
+  const [colorMode, setColorMode] = useState<ColorMode>("bw");
+  const [solid, setSolid] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
 
@@ -40,7 +44,7 @@ function HalftonePage() {
     if (!src) return;
     render();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, tab, knockoutColor, bgColor, bgEnabled, shape, dotSize, angle, contrast, brightness]);
+  }, [src, tab, knockoutColor, bgColor, bgEnabled, shape, dotSize, angle, contrast, brightness, colorMode, solid]);
 
   async function render() {
     if (!src || !canvasRef.current) return;
@@ -66,7 +70,7 @@ function HalftonePage() {
       ctx.clearRect(0, 0, c.width, c.height);
     }
 
-    // Read luminance from source
+    // Luminance (siempre en gris) para calcular el peso del punto
     const tmp = document.createElement("canvas");
     tmp.width = c.width;
     tmp.height = c.height;
@@ -74,6 +78,18 @@ function HalftonePage() {
     tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) grayscale(1)`;
     tctx.drawImage(img, 0, 0, c.width, c.height);
     const data = tctx.getImageData(0, 0, c.width, c.height).data;
+
+    // Color original (opcional) para modo color
+    let colorData: Uint8ClampedArray | null = null;
+    if (colorMode === "color") {
+      const ctmp = document.createElement("canvas");
+      ctmp.width = c.width;
+      ctmp.height = c.height;
+      const cctx = ctmp.getContext("2d")!;
+      cctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
+      cctx.drawImage(img, 0, 0, c.width, c.height);
+      colorData = cctx.getImageData(0, 0, c.width, c.height).data;
+    }
 
     const step = Math.max(3, dotSize);
     const rad = (angle * Math.PI) / 180;
@@ -86,27 +102,36 @@ function HalftonePage() {
 
     for (let yy = -diag; yy < diag; yy += step) {
       for (let xx = -diag; xx < diag; xx += step) {
-        // rotate back to source coords
         const sx = Math.round(xx * cos - yy * sin + c.width / 2);
         const sy = Math.round(xx * sin + yy * cos + c.height / 2);
         if (sx < 0 || sx >= c.width || sy < 0 || sy >= c.height) continue;
         const i = (sy * c.width + sx) * 4;
-        const lum = data[i]; // grayscale, so r=g=b
-        const darkness = 1 - lum / 255;
+        const lum = data[i];
+        const rawDark = 1 - lum / 255;
+        // Solid: umbral duro (sin degradados), tamaño completo
+        const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
         if (darkness <= 0.02) continue;
 
-        // rotate dot position back to canvas
         const cx = xx * cos - yy * sin + c.width / 2;
         const cy = xx * sin + yy * cos + c.height / 2;
 
+        // Color del punto
+        if (colorData) {
+          ctx.fillStyle = `rgb(${colorData[i]}, ${colorData[i + 1]}, ${colorData[i + 2]})`;
+          ctx.strokeStyle = ctx.fillStyle;
+        } else {
+          ctx.fillStyle = knockoutColor;
+          ctx.strokeStyle = knockoutColor;
+        }
+
         if (shape === "dot") {
-          const r = (step / 2) * Math.sqrt(darkness);
+          const r = solid ? step / 2 : (step / 2) * Math.sqrt(darkness);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const len = step * darkness;
-          ctx.lineWidth = Math.max(1, step * 0.4 * darkness);
+          const len = solid ? step : step * darkness;
+          ctx.lineWidth = solid ? Math.max(1, step * 0.4) : Math.max(1, step * 0.4 * darkness);
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(rad);
@@ -130,6 +155,8 @@ function HalftonePage() {
     setDpi(300);
     setContrast(1);
     setBrightness(0);
+    setColorMode("bw");
+    setSolid(false);
   }
 
   function download(format: "png" | "svg" | "jpg") {
@@ -225,6 +252,27 @@ function HalftonePage() {
         </div>
 
         <Section title="Color">
+          <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+            <button
+              onClick={() => setColorMode("color")}
+              className={`rounded py-1.5 text-xs font-medium ${colorMode === "color" ? "bg-foreground text-background" : ""}`}
+            >
+              Color
+            </button>
+            <button
+              onClick={() => setColorMode("bw")}
+              className={`rounded py-1.5 text-xs font-medium ${colorMode === "bw" ? "bg-foreground text-background" : ""}`}
+            >
+              Blanco y Negro
+            </button>
+          </div>
+          <div className="flex items-center justify-between rounded-md border border-border bg-background/40 px-2 py-1.5">
+            <div>
+              <p className="text-xs font-medium">Sólido (sin degradados)</p>
+              <p className="text-[10px] text-muted-foreground">B/N puro por umbral</p>
+            </div>
+            <Switch checked={solid} onCheckedChange={setSolid} />
+          </div>
           <ColorRow label="Knockout" value={knockoutColor} onChange={setKnockoutColor} />
           <ColorRow
             label="BG"
