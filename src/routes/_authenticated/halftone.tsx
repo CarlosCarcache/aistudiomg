@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/halftone")({
 
 type Shape = "dot" | "line";
 type Tab = "original" | "preview" | "export" | "mask";
+type ColorMode = "color" | "bw";
 
 const DPI_OPTS = [300, 400, 500, 600, 700, 800];
 
@@ -31,6 +32,8 @@ function HalftonePage() {
   const [dpi, setDpi] = useState(300);
   const [contrast, setContrast] = useState(1);
   const [brightness, setBrightness] = useState(0);
+  const [colorMode, setColorMode] = useState<ColorMode>("bw");
+  const [solid, setSolid] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
 
@@ -40,7 +43,7 @@ function HalftonePage() {
     if (!src) return;
     render();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, tab, knockoutColor, bgColor, bgEnabled, shape, dotSize, angle, contrast, brightness]);
+  }, [src, tab, knockoutColor, bgColor, bgEnabled, shape, dotSize, angle, contrast, brightness, colorMode, solid]);
 
   async function render() {
     if (!src || !canvasRef.current) return;
