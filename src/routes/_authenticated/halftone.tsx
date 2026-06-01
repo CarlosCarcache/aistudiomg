@@ -69,7 +69,7 @@ function HalftonePage() {
       ctx.clearRect(0, 0, c.width, c.height);
     }
 
-    // Read luminance from source
+    // Luminance (siempre en gris) para calcular el peso del punto
     const tmp = document.createElement("canvas");
     tmp.width = c.width;
     tmp.height = c.height;
@@ -77,6 +77,18 @@ function HalftonePage() {
     tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) grayscale(1)`;
     tctx.drawImage(img, 0, 0, c.width, c.height);
     const data = tctx.getImageData(0, 0, c.width, c.height).data;
+
+    // Color original (opcional) para modo color
+    let colorData: Uint8ClampedArray | null = null;
+    if (colorMode === "color") {
+      const ctmp = document.createElement("canvas");
+      ctmp.width = c.width;
+      ctmp.height = c.height;
+      const cctx = ctmp.getContext("2d")!;
+      cctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
+      cctx.drawImage(img, 0, 0, c.width, c.height);
+      colorData = cctx.getImageData(0, 0, c.width, c.height).data;
+    }
 
     const step = Math.max(3, dotSize);
     const rad = (angle * Math.PI) / 180;
@@ -89,27 +101,36 @@ function HalftonePage() {
 
     for (let yy = -diag; yy < diag; yy += step) {
       for (let xx = -diag; xx < diag; xx += step) {
-        // rotate back to source coords
         const sx = Math.round(xx * cos - yy * sin + c.width / 2);
         const sy = Math.round(xx * sin + yy * cos + c.height / 2);
         if (sx < 0 || sx >= c.width || sy < 0 || sy >= c.height) continue;
         const i = (sy * c.width + sx) * 4;
-        const lum = data[i]; // grayscale, so r=g=b
-        const darkness = 1 - lum / 255;
+        const lum = data[i];
+        const rawDark = 1 - lum / 255;
+        // Solid: umbral duro (sin degradados), tamaño completo
+        const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
         if (darkness <= 0.02) continue;
 
-        // rotate dot position back to canvas
         const cx = xx * cos - yy * sin + c.width / 2;
         const cy = xx * sin + yy * cos + c.height / 2;
 
+        // Color del punto
+        if (colorData) {
+          ctx.fillStyle = `rgb(${colorData[i]}, ${colorData[i + 1]}, ${colorData[i + 2]})`;
+          ctx.strokeStyle = ctx.fillStyle;
+        } else {
+          ctx.fillStyle = knockoutColor;
+          ctx.strokeStyle = knockoutColor;
+        }
+
         if (shape === "dot") {
-          const r = (step / 2) * Math.sqrt(darkness);
+          const r = solid ? step / 2 : (step / 2) * Math.sqrt(darkness);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          const len = step * darkness;
-          ctx.lineWidth = Math.max(1, step * 0.4 * darkness);
+          const len = solid ? step : step * darkness;
+          ctx.lineWidth = solid ? Math.max(1, step * 0.4) : Math.max(1, step * 0.4 * darkness);
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate(rad);
