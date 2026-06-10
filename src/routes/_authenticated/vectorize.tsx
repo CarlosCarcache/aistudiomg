@@ -179,23 +179,27 @@ function VectorizePage() {
     return svgStr.replace(/fill="[^"]*"/g, `fill="${color}"`);
   }
 
-  async function handleAiCleanup() {
+  async function runAi(prompt: string) {
     const source = editedSrc ?? src;
-    if (!source) return;
+    if (!source) return toast.error("Sube una imagen primero");
+    if (!prompt.trim()) return toast.error("Escribe qué quieres que la IA haga");
     setAiBusy(true);
+    const id = toast.loading("La IA está editando la imagen…");
     try {
-      const out = await aiImage(
-        "Limpia esta imagen y prepárala para vectorizar: fondo transparente, colores planos sólidos, bordes nítidos, sin ruido ni sombras.",
-        [source],
-      );
+      const out = await aiImage(prompt, [source]);
       setSrc(out);
-      toast.success("Imagen preparada por IA");
+      setSvg(null);
+      toast.success("Imagen actualizada por IA", { id });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error");
+      toast.error(e instanceof Error ? e.message : "Error", { id });
     } finally {
       setAiBusy(false);
     }
   }
+
+  const [aiPrompt, setAiPrompt] = useState(
+    "Limpia esta imagen: fondo transparente, colores planos sólidos, bordes nítidos, sin ruido ni sombras.",
+  );
 
   // Click sobre el SVG: elimina el <path> sobre el que se hizo click
   function onSvgClick(e: React.MouseEvent) {
