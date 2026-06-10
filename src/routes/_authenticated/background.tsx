@@ -7,13 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { aiImage, downloadDataUrl } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
+import { removeBackground } from "@imgly/background-removal";
 
 export const Route = createFileRoute("/_authenticated/background")({
   component: BackgroundPage,
 });
 
 const PRESETS = [
-  { label: "Quitar fondo", prompt: "Elimina completamente el fondo, deja el sujeto con fondo transparente (PNG con alpha)." },
   { label: "Limpiar imagen", prompt: "Limpia esta imagen, quita ruido y artefactos, conserva el sujeto principal nítido." },
   { label: "Fondo blanco", prompt: "Reemplaza el fondo por un blanco puro liso." },
   { label: "Fondo estudio", prompt: "Coloca al sujeto sobre un fondo de estudio gris degradado profesional." },
@@ -34,6 +34,28 @@ function BackgroundPage() {
       setResult(out);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function removeBg() {
+    if (!src) return toast.error("Sube una imagen");
+    setLoading(true);
+    const t = toast.loading("Quitando fondo (puede tardar la primera vez)...");
+    try {
+      const input = result ?? src;
+      const blob = await removeBackground(input);
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result as string);
+        r.onerror = () => rej(new Error("read"));
+        r.readAsDataURL(blob);
+      });
+      setResult(dataUrl);
+      toast.success("Fondo quitado", { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error quitando fondo", { id: t });
     } finally {
       setLoading(false);
     }
