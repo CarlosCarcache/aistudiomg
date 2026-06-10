@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Wand2, Download, Loader2, Sparkles, Eraser, Brush, Undo2, MousePointerClick, Trash2 } from "lucide-react";
+import { Wand2, Download, Loader2, Sparkles, Eraser, Brush, Undo2, MousePointerClick, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
 import ImageTracer from "imagetracerjs";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageDropzone } from "@/components/image-dropzone";
