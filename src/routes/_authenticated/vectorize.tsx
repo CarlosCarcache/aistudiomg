@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Wand2, Download, Loader2, Sparkles, Eraser, Brush, Undo2, MousePointerClick, Trash2 } from "lucide-react";
+import { Wand2, Download, Loader2, Sparkles, Eraser, Brush, Undo2, MousePointerClick, Trash2, Send } from "lucide-react";
 import { toast } from "sonner";
 import ImageTracer from "imagetracerjs";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageDropzone } from "@/components/image-dropzone";
@@ -178,23 +179,27 @@ function VectorizePage() {
     return svgStr.replace(/fill="[^"]*"/g, `fill="${color}"`);
   }
 
-  async function handleAiCleanup() {
+  async function runAi(prompt: string) {
     const source = editedSrc ?? src;
-    if (!source) return;
+    if (!source) return toast.error("Sube una imagen primero");
+    if (!prompt.trim()) return toast.error("Escribe qué quieres que la IA haga");
     setAiBusy(true);
+    const id = toast.loading("La IA está editando la imagen…");
     try {
-      const out = await aiImage(
-        "Limpia esta imagen y prepárala para vectorizar: fondo transparente, colores planos sólidos, bordes nítidos, sin ruido ni sombras.",
-        [source],
-      );
+      const out = await aiImage(prompt, [source]);
       setSrc(out);
-      toast.success("Imagen preparada por IA");
+      setSvg(null);
+      toast.success("Imagen actualizada por IA", { id });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error");
+      toast.error(e instanceof Error ? e.message : "Error", { id });
     } finally {
       setAiBusy(false);
     }
   }
+
+  const [aiPrompt, setAiPrompt] = useState(
+    "Limpia esta imagen: fondo transparente, colores planos sólidos, bordes nítidos, sin ruido ni sombras.",
+  );
 
   // Click sobre el SVG: elimina el <path> sobre el que se hizo click
   function onSvgClick(e: React.MouseEvent) {
@@ -274,14 +279,37 @@ function VectorizePage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleVectorize} disabled={!src || loading} className="flex-1">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              Vectorizar
-            </Button>
-            <Button onClick={handleAiCleanup} disabled={!src || aiBusy} variant="secondary">
-              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              IA
+          <Button onClick={handleVectorize} disabled={!src || loading} className="w-full">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            Vectorizar
+          </Button>
+
+          <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" /> Editar con IA
+            </div>
+            <Textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Ej: quita el fondo, deja solo el logo en negro sólido"
+              rows={3}
+              disabled={aiBusy}
+            />
+            <div className="flex flex-wrap gap-1">
+              {[
+                "Quita el fondo",
+                "Colores planos sólidos",
+                "Convierte a blanco y negro",
+                "Bordes nítidos sin ruido",
+              ].map((p) => (
+                <Button key={p} size="sm" variant="outline" type="button" onClick={() => setAiPrompt(p)}>
+                  {p}
+                </Button>
+              ))}
+            </div>
+            <Button onClick={() => runAi(aiPrompt)} disabled={!src || aiBusy} className="w-full" variant="secondary">
+              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Aplicar IA a la imagen
             </Button>
           </div>
         </div>
