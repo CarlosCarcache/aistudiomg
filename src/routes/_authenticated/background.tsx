@@ -7,13 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { aiImage, downloadDataUrl } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
+import { removeBackground } from "@imgly/background-removal";
 
 export const Route = createFileRoute("/_authenticated/background")({
   component: BackgroundPage,
 });
 
 const PRESETS = [
-  { label: "Quitar fondo", prompt: "Elimina completamente el fondo, deja el sujeto con fondo transparente (PNG con alpha)." },
   { label: "Limpiar imagen", prompt: "Limpia esta imagen, quita ruido y artefactos, conserva el sujeto principal nítido." },
   { label: "Fondo blanco", prompt: "Reemplaza el fondo por un blanco puro liso." },
   { label: "Fondo estudio", prompt: "Coloca al sujeto sobre un fondo de estudio gris degradado profesional." },
@@ -39,6 +39,28 @@ function BackgroundPage() {
     }
   }
 
+  async function removeBg() {
+    if (!src) return toast.error("Sube una imagen");
+    setLoading(true);
+    const t = toast.loading("Quitando fondo (puede tardar la primera vez)...");
+    try {
+      const input = result ?? src;
+      const blob = await removeBackground(input);
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result as string);
+        r.onerror = () => rej(new Error("read"));
+        r.readAsDataURL(blob);
+      });
+      setResult(dataUrl);
+      toast.success("Fondo quitado", { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error quitando fondo", { id: t });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader title="Fondos" description="Quita fondo, limpia, agrega fondos nuevos o pide cambios por texto." />
@@ -53,10 +75,14 @@ function BackgroundPage() {
 
           <div className="space-y-2 rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-medium">Acciones rápidas</p>
+            <Button disabled={!src || loading} onClick={removeBg} className="w-full">
+              <Eraser className="h-4 w-4" />
+              Quitar fondo (transparente)
+            </Button>
             <div className="grid grid-cols-2 gap-2">
               {PRESETS.map((p) => (
                 <Button key={p.label} variant="secondary" size="sm" disabled={!src || loading} onClick={() => run(p.prompt)}>
-                  {p.label === "Quitar fondo" ? <Eraser className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
+                  <Layers className="h-4 w-4" />
                   {p.label}
                 </Button>
               ))}
