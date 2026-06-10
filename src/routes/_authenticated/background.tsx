@@ -75,10 +75,14 @@ function BackgroundPage() {
 
           <div className="space-y-2 rounded-xl border border-border bg-card p-4">
             <p className="text-sm font-medium">Acciones rápidas</p>
+            <Button disabled={!src || loading} onClick={removeBg} className="w-full">
+              <Eraser className="h-4 w-4" />
+              Quitar fondo (transparente)
+            </Button>
             <div className="grid grid-cols-2 gap-2">
               {PRESETS.map((p) => (
                 <Button key={p.label} variant="secondary" size="sm" disabled={!src || loading} onClick={() => run(p.prompt)}>
-                  {p.label === "Quitar fondo" ? <Eraser className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
+                  <Layers className="h-4 w-4" />
                   {p.label}
                 </Button>
               ))}
