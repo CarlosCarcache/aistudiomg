@@ -279,14 +279,37 @@ function VectorizePage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={handleVectorize} disabled={!src || loading} className="flex-1">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-              Vectorizar
-            </Button>
-            <Button onClick={handleAiCleanup} disabled={!src || aiBusy} variant="secondary">
-              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              IA
+          <Button onClick={handleVectorize} disabled={!src || loading} className="w-full">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            Vectorizar
+          </Button>
+
+          <div className="space-y-2 rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-primary" /> Editar con IA
+            </div>
+            <Textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Ej: quita el fondo, deja solo el logo en negro sólido"
+              rows={3}
+              disabled={aiBusy}
+            />
+            <div className="flex flex-wrap gap-1">
+              {[
+                "Quita el fondo",
+                "Colores planos sólidos",
+                "Convierte a blanco y negro",
+                "Bordes nítidos sin ruido",
+              ].map((p) => (
+                <Button key={p} size="sm" variant="outline" type="button" onClick={() => setAiPrompt(p)}>
+                  {p}
+                </Button>
+              ))}
+            </div>
+            <Button onClick={() => runAi(aiPrompt)} disabled={!src || aiBusy} className="w-full" variant="secondary">
+              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Aplicar IA a la imagen
             </Button>
           </div>
         </div>
