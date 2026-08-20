@@ -1,436 +1,420 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { Wand2, Download, Loader2, Sparkles, Eraser, Brush, Undo2, MousePointerClick, Trash2, Send } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Brush,
+  Download,
+  Eye,
+  EyeOff,
+  GripVertical,
+  Loader2,
+  MousePointer2,
+  RotateCcw,
+  Trash2,
+  Undo2,
+  Wand2,
+} from "lucide-react";
 import ImageTracer from "imagetracerjs";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageDropzone } from "@/components/image-dropzone";
-import { aiImage, downloadDataUrl, loadImage } from "@/lib/image-utils";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { downloadDataUrl, loadImage } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/vectorize")({
+  head: () => ({
+    meta: [
+      { title: "Editor vectorial por capas | AI Studio MG" },
+      { name: "description", content: "Vectoriza imágenes y edita cada forma, color y posición de manera independiente." },
+      { property: "og:title", content: "Editor vectorial por capas | AI Studio MG" },
+      { property: "og:description", content: "Vectoriza imágenes y edita cada forma, color y posición de manera independiente." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: VectorizePage,
 });
 
-type VFormat = "svg" | "png";
-type Tool = "erase" | "restore";
+type VectorTag = "path" | "polygon" | "polyline" | "rect" | "circle" | "ellipse";
+type VectorShape = {
+  id: string;
+  tag: VectorTag;
+  attrs: Record<string, string>;
+  x: number;
+  y: number;
+  visible: boolean;
+};
+type Snapshot = { shapes: VectorShape[]; selectedId: string | null };
+type ExportFormat = "svg" | "png";
+
+const VECTOR_TAGS = new Set<VectorTag>(["path", "polygon", "polyline", "rect", "circle", "ellipse"]);
+
+function cloneShapes(shapes: VectorShape[]) {
+  return shapes.map((shape) => ({ ...shape, attrs: { ...shape.attrs } }));
+}
+
+function parseVector(svgText: string) {
+  const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+  const root = doc.documentElement;
+  const viewBox = root.getAttribute("viewBox") ?? `0 0 ${root.getAttribute("width") ?? 1024} ${root.getAttribute("height") ?? 1024}`;
+  const shapes: VectorShape[] = [];
+
+  root.querySelectorAll("path, polygon, polyline, rect, circle, ellipse").forEach((node, index) => {
+    const tag = node.tagName.toLowerCase() as VectorTag;
+    if (!VECTOR_TAGS.has(tag)) return;
+    const attrs: Record<string, string> = {};
+    Array.from(node.attributes).forEach((attribute) => {
+      if (attribute.name !== "transform") attrs[attribute.name] = attribute.value;
+    });
+    shapes.push({ id: `forma-${index + 1}`, tag, attrs, x: 0, y: 0, visible: true });
+  });
+
+  return { shapes, viewBox };
+}
+
+function escapeAttribute(value: string) {
+  return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
+}
+
+function serializeSvg(shapes: VectorShape[], viewBox: string) {
+  const body = shapes
+    .filter((shape) => shape.visible)
+    .map((shape) => {
+      const attrs = Object.entries(shape.attrs)
+        .map(([key, value]) => `${key}="${escapeAttribute(value)}"`)
+        .join(" ");
+      return `<${shape.tag} ${attrs} transform="translate(${shape.x} ${shape.y})"/>`;
+    })
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeAttribute(viewBox)}">${body}</svg>`;
+}
 
 function VectorizePage() {
-  const [src, setSrc] = useState<string | null>(null);
-  const [editedSrc, setEditedSrc] = useState<string | null>(null);
-  const [svg, setSvg] = useState<string | null>(null);
-  const [colors, setColors] = useState(8);
-  const [ltres, setLtres] = useState(1);
-  const [qtres, setQtres] = useState(1);
-  const [pathomit, setPathomit] = useState(8);
-  const [strokeWidth, setStrokeWidth] = useState(1);
-  const [tintColor, setTintColor] = useState("#000000");
-  const [tintEnabled, setTintEnabled] = useState(false);
-  const [format, setFormat] = useState<VFormat>("svg");
+  const [source, setSource] = useState<string | null>(null);
+  const [shapes, setShapes] = useState<VectorShape[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [viewBox, setViewBox] = useState("0 0 1024 1024");
+  const [colors, setColors] = useState(16);
+  const [detail, setDetail] = useState(1);
+  const [smoothing, setSmoothing] = useState(1);
+  const [omit, setOmit] = useState(4);
   const [loading, setLoading] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
+  const [format, setFormat] = useState<ExportFormat>("svg");
+  const [pngScale, setPngScale] = useState(4);
+  const [activeTab, setActiveTab] = useState("source");
+  const historyRef = useRef<Snapshot[]>([]);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
-  // Editor de imagen (borrar/restaurar partes antes de vectorizar)
-  const [tool, setTool] = useState<Tool>("erase");
-  const [brushSize, setBrushSize] = useState(30);
-  const editCanvasRef = useRef<HTMLCanvasElement>(null);
-  const originalRef = useRef<HTMLImageElement | null>(null);
-  const historyRef = useRef<ImageData[]>([]);
-  const drawingRef = useRef(false);
-
-  // Editor SVG (click para borrar trazos individuales)
-  const [eraseSvgMode, setEraseSvgMode] = useState(false);
-  const svgContainerRef = useRef<HTMLDivElement>(null);
+  const selected = useMemo(() => shapes.find((shape) => shape.id === selectedId) ?? null, [shapes, selectedId]);
 
   useEffect(() => {
-    if (!src) return;
-    (async () => {
-      const img = await loadImage(src);
-      originalRef.current = img;
-      const c = editCanvasRef.current;
-      if (!c) return;
-      const maxW = 800;
-      const scale = Math.min(1, maxW / img.width);
-      c.width = img.width * scale;
-      c.height = img.height * scale;
-      const ctx = c.getContext("2d")!;
-      ctx.clearRect(0, 0, c.width, c.height);
-      ctx.drawImage(img, 0, 0, c.width, c.height);
-      historyRef.current = [ctx.getImageData(0, 0, c.width, c.height)];
-      setEditedSrc(c.toDataURL("image/png"));
-    })();
-  }, [src]);
+    if (!selectedId && shapes.length) setSelectedId(shapes[shapes.length - 1].id);
+  }, [selectedId, shapes]);
 
-  function pushHistory() {
-    const c = editCanvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d")!;
-    historyRef.current.push(ctx.getImageData(0, 0, c.width, c.height));
-    if (historyRef.current.length > 30) historyRef.current.shift();
-  }
-
-  function getPos(e: React.PointerEvent) {
-    const c = editCanvasRef.current!;
-    const r = c.getBoundingClientRect();
-    return {
-      x: ((e.clientX - r.left) * c.width) / r.width,
-      y: ((e.clientY - r.top) * c.height) / r.height,
-    };
-  }
-
-  function onPointerDown(e: React.PointerEvent) {
-    if (!editCanvasRef.current) return;
-    drawingRef.current = true;
-    pushHistory();
-    paint(e);
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    if (!drawingRef.current) return;
-    paint(e);
-  }
-  function onPointerUp() {
-    if (!drawingRef.current) return;
-    drawingRef.current = false;
-    const c = editCanvasRef.current;
-    if (c) setEditedSrc(c.toDataURL("image/png"));
-  }
-
-  function paint(e: React.PointerEvent) {
-    const c = editCanvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d")!;
-    const { x, y } = getPos(e);
-    ctx.save();
-    if (tool === "erase") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath();
-      ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      // restaurar desde la imagen original
-      const img = originalRef.current;
-      if (img) {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        ctx.restore();
-      }
-    }
-    ctx.restore();
+  function saveHistory() {
+    historyRef.current.push({ shapes: cloneShapes(shapes), selectedId });
+    if (historyRef.current.length > 40) historyRef.current.shift();
   }
 
   function undo() {
-    const c = editCanvasRef.current;
-    if (!c || historyRef.current.length < 2) return;
-    historyRef.current.pop();
-    const last = historyRef.current[historyRef.current.length - 1];
-    c.getContext("2d")!.putImageData(last, 0, 0);
-    setEditedSrc(c.toDataURL("image/png"));
+    const snapshot = historyRef.current.pop();
+    if (!snapshot) return;
+    setShapes(snapshot.shapes);
+    setSelectedId(snapshot.selectedId);
   }
 
-  function resetEdit() {
-    const c = editCanvasRef.current;
-    const img = originalRef.current;
-    if (!c || !img) return;
-    const ctx = c.getContext("2d")!;
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    historyRef.current = [ctx.getImageData(0, 0, c.width, c.height)];
-    setEditedSrc(c.toDataURL("image/png"));
-  }
-
-  async function handleVectorize() {
-    const source = editedSrc ?? src;
+  async function vectorize() {
     if (!source) return;
     setLoading(true);
     try {
-      const img = await loadImage(source);
+      const image = await loadImage(source);
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const svgStr = ImageTracer.imagedataToSVG(imgData, {
+      canvas.width = image.naturalWidth || image.width;
+      canvas.height = image.naturalHeight || image.height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("No se pudo preparar la imagen");
+      context.drawImage(image, 0, 0);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const traced = ImageTracer.imagedataToSVG(imageData, {
         numberofcolors: colors,
-        ltres,
-        qtres,
-        pathomit,
-        strokewidth: strokeWidth,
+        ltres: detail,
+        qtres: smoothing,
+        pathomit: omit,
+        strokewidth: 0,
       });
-      const finalSvg = tintEnabled ? recolor(svgStr, tintColor) : svgStr;
-      setSvg(finalSvg);
-      toast.success("Vectorizado");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error");
+      const parsed = parseVector(traced);
+      if (!parsed.shapes.length) throw new Error("No se detectaron formas en la imagen");
+      historyRef.current = [];
+      setShapes(parsed.shapes);
+      setViewBox(parsed.viewBox);
+      setSelectedId(parsed.shapes[parsed.shapes.length - 1].id);
+      setActiveTab("vector");
+      toast.success(`${parsed.shapes.length} partes vectoriales creadas`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo vectorizar");
     } finally {
       setLoading(false);
     }
   }
 
-  function recolor(svgStr: string, color: string) {
-    return svgStr.replace(/fill="[^"]*"/g, `fill="${color}"`);
+  function updateShape(id: string, update: Partial<VectorShape>) {
+    setShapes((current) => current.map((shape) => (shape.id === id ? { ...shape, ...update } : shape)));
   }
 
-  async function runAi(prompt: string) {
-    const source = editedSrc ?? src;
-    if (!source) return toast.error("Sube una imagen primero");
-    if (!prompt.trim()) return toast.error("Escribe qué quieres que la IA haga");
-    setAiBusy(true);
-    const id = toast.loading("La IA está editando la imagen…");
-    try {
-      const out = await aiImage(prompt, [source]);
-      setSrc(out);
-      setSvg(null);
-      toast.success("Imagen actualizada por IA", { id });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error", { id });
-    } finally {
-      setAiBusy(false);
-    }
+  function changeColor(color: string) {
+    if (!selected) return;
+    saveHistory();
+    updateShape(selected.id, { attrs: { ...selected.attrs, fill: color } });
   }
 
-  const [aiPrompt, setAiPrompt] = useState(
-    "Limpia esta imagen: fondo transparente, colores planos sólidos, bordes nítidos, sin ruido ni sombras.",
-  );
-
-  // Click sobre el SVG: elimina el <path> sobre el que se hizo click
-  function onSvgClick(e: React.MouseEvent) {
-    if (!eraseSvgMode) return;
-    const t = e.target as SVGElement;
-    if (!t || !(t.tagName === "path" || t.tagName === "polygon" || t.tagName === "rect")) return;
-    t.remove();
-    const container = svgContainerRef.current;
-    if (container) setSvg(container.innerHTML);
+  function removeSelected() {
+    if (!selectedId) return;
+    saveHistory();
+    setShapes((current) => current.filter((shape) => shape.id !== selectedId));
+    setSelectedId(null);
   }
 
-  function handleDownload() {
-    if (!svg) return;
+  function toggleVisibility(id: string) {
+    const shape = shapes.find((item) => item.id === id);
+    if (!shape) return;
+    saveHistory();
+    updateShape(id, { visible: !shape.visible });
+  }
+
+  function pointerPosition(event: React.PointerEvent<SVGSVGElement>) {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const matrix = svg.getScreenCTM()?.inverse();
+    if (!matrix) return null;
+    return point.matrixTransform(matrix);
+  }
+
+  function startDrag(event: React.PointerEvent<SVGSVGElement>, shape: VectorShape) {
+    event.stopPropagation();
+    const point = pointerPosition(event);
+    if (!point) return;
+    saveHistory();
+    setSelectedId(shape.id);
+    dragRef.current = { id: shape.id, startX: point.x, startY: point.y, originX: shape.x, originY: shape.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: React.PointerEvent<SVGSVGElement>) {
+    const drag = dragRef.current;
+    const point = pointerPosition(event);
+    if (!drag || !point) return;
+    updateShape(drag.id, { x: drag.originX + point.x - drag.startX, y: drag.originY + point.y - drag.startY });
+  }
+
+  function stopDrag(event: React.PointerEvent<SVGSVGElement>) {
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function resetPosition() {
+    if (!selected) return;
+    saveHistory();
+    updateShape(selected.id, { x: 0, y: 0 });
+  }
+
+  async function download() {
+    if (!shapes.length) return;
+    const svgText = serializeSvg(shapes, viewBox);
+    const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgText)}`;
     if (format === "svg") {
-      const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-      downloadDataUrl(url, `vector-${Date.now()}.svg`);
-    } else {
-      const img = new Image();
-      const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-      img.onload = () => {
-        const c = document.createElement("canvas");
-        c.width = img.width || 1024;
-        c.height = img.height || 1024;
-        c.getContext("2d")!.drawImage(img, 0, 0);
-        downloadDataUrl(c.toDataURL("image/png"), `vector-${Date.now()}.png`);
-      };
-      img.src = url;
+      downloadDataUrl(svgUrl, `vector-editable-${Date.now()}.svg`);
+      return;
     }
+    const values = viewBox.trim().split(/\s+/).map(Number);
+    const width = values[2] || 1024;
+    const height = values[3] || 1024;
+    const image = await loadImage(svgUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(width * pngScale);
+    canvas.height = Math.round(height * pngScale);
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    downloadDataUrl(canvas.toDataURL("image/png"), `vector-${pngScale}x-${Date.now()}.png`);
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader
-        title="Vectorizar"
-        description="Borra partes de la imagen, ajusta los trazos y conviértela en SVG editable."
-      />
+    <div className="mx-auto max-w-[1500px] space-y-5">
+      <PageHeader title="Vectorizar por partes" description="Convierte la imagen en formas independientes y edita cada pieza sin perder calidad." />
 
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <div className="space-y-4">
+      <div className="grid min-h-[620px] gap-4 xl:grid-cols-[300px_minmax(0,1fr)_280px]">
+        <aside className="space-y-4 rounded-lg border border-border bg-card p-4">
           <ImageDropzone
-            preview={src}
+            preview={source}
             onClear={() => {
-              setSrc(null);
-              setEditedSrc(null);
-              setSvg(null);
+              setSource(null);
+              setShapes([]);
+              setSelectedId(null);
+              setActiveTab("source");
             }}
-            onFiles={(f) => {
-              setSrc(f[0].dataUrl);
-              setSvg(null);
+            onFiles={(files) => {
+              const first = files[0];
+              if (!first) return;
+              setSource(first.dataUrl);
+              setShapes([]);
+              setActiveTab("source");
             }}
+            className="min-h-40"
           />
 
-          <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Trazos</p>
-            <Label label="Colores" value={colors} />
-            <Slider value={[colors]} min={2} max={32} step={1} onValueChange={(v) => setColors(v[0])} />
-            <Label label="Detalle líneas" value={ltres} />
-            <Slider value={[ltres]} min={0.1} max={3} step={0.1} onValueChange={(v) => setLtres(v[0])} />
-            <Label label="Suavizado" value={qtres} />
-            <Slider value={[qtres]} min={0.1} max={3} step={0.1} onValueChange={(v) => setQtres(v[0])} />
-            <Label label="Eliminar trazos pequeños" value={pathomit} />
-            <Slider value={[pathomit]} min={0} max={50} step={1} onValueChange={(v) => setPathomit(v[0])} />
-            <Label label="Grosor trazo" value={strokeWidth} />
-            <Slider value={[strokeWidth]} min={0} max={6} step={0.5} onValueChange={(v) => setStrokeWidth(v[0])} />
-
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={tintEnabled} onChange={(e) => setTintEnabled(e.target.checked)} />
-                Color único
-              </label>
-              <input
-                type="color"
-                value={tintColor}
-                onChange={(e) => setTintColor(e.target.value)}
-                className="h-8 w-12 cursor-pointer rounded border border-border bg-transparent"
-              />
-            </div>
-          </div>
-
-          <Button onClick={handleVectorize} disabled={!src || loading} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-            Vectorizar
-          </Button>
-
-          <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Sparkles className="h-4 w-4 text-primary" /> Editar con IA
-            </div>
-            <Textarea
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="Ej: quita el fondo, deja solo el logo en negro sólido"
-              rows={3}
-              disabled={aiBusy}
-            />
-            <div className="flex flex-wrap gap-1">
-              {[
-                "Quita el fondo",
-                "Colores planos sólidos",
-                "Convierte a blanco y negro",
-                "Bordes nítidos sin ruido",
-              ].map((p) => (
-                <Button key={p} size="sm" variant="outline" type="button" onClick={() => setAiPrompt(p)}>
-                  {p}
-                </Button>
-              ))}
-            </div>
-            <Button onClick={() => runAi(aiPrompt)} disabled={!src || aiBusy} className="w-full" variant="secondary">
-              {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Aplicar IA a la imagen
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-semibold"><Wand2 className="h-4 w-4 text-primary" /> Vectorización</div>
+            <Control label="Cantidad de colores" value={colors}><Slider value={[colors]} min={2} max={48} step={1} onValueChange={(value) => setColors(value[0] ?? 16)} /></Control>
+            <Control label="Detalle de contorno" value={detail}><Slider value={[detail]} min={0.1} max={3} step={0.1} onValueChange={(value) => setDetail(value[0] ?? 1)} /></Control>
+            <Control label="Suavizado" value={smoothing}><Slider value={[smoothing]} min={0.1} max={3} step={0.1} onValueChange={(value) => setSmoothing(value[0] ?? 1)} /></Control>
+            <Control label="Omitir puntos pequeños" value={omit}><Slider value={[omit]} min={0} max={30} step={1} onValueChange={(value) => setOmit(value[0] ?? 4)} /></Control>
+            <Button className="w-full" disabled={!source || loading} onClick={vectorize}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {shapes.length ? "Volver a vectorizar" : "Vectorizar imagen"}
             </Button>
-          </div>
-        </div>
+          </section>
 
-        <div className="rounded-2xl border border-border bg-card/30 p-4">
-          {!src ? (
-            <div className="grid h-full min-h-[420px] place-items-center text-center text-sm text-muted-foreground">
-              <div>
-                <Wand2 className="mx-auto h-10 w-10" />
-                <p className="mt-2">Sube una imagen para empezar.</p>
+          <section className="space-y-3 border-t border-border pt-4">
+            <p className="text-sm font-semibold">Exportación</p>
+            <div className="flex gap-2">
+              <Select value={format} onValueChange={(value) => setFormat(value as ExportFormat)}>
+                <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="svg">SVG editable</SelectItem><SelectItem value="png">PNG</SelectItem></SelectContent>
+              </Select>
+              {format === "png" && (
+                <Select value={String(pngScale)} onValueChange={(value) => setPngScale(Number(value))}>
+                  <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                  <SelectContent>{[1, 2, 3, 4].map((scale) => <SelectItem key={scale} value={String(scale)}>{scale}x</SelectItem>)}</SelectContent>
+                </Select>
+              )}
+            </div>
+            <Button variant="secondary" className="w-full" disabled={!shapes.length} onClick={download}><Download className="h-4 w-4" /> Descargar</Button>
+          </section>
+        </aside>
+
+        <main className="min-w-0 rounded-lg border border-border bg-card/40 p-3">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between gap-3">
+              <TabsList><TabsTrigger value="source">Original</TabsTrigger><TabsTrigger value="vector" disabled={!shapes.length}>Vector editable</TabsTrigger></TabsList>
+              <div className="flex gap-1">
+                <Button size="icon" variant="ghost" onClick={undo} disabled={!historyRef.current.length} title="Deshacer"><Undo2 className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={removeSelected} disabled={!selected} title="Eliminar forma"><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
-          ) : (
-            <Tabs defaultValue="edit" className="w-full">
-              <TabsList>
-                <TabsTrigger value="edit">Editar imagen</TabsTrigger>
-                <TabsTrigger value="svg" disabled={!svg}>Vector</TabsTrigger>
-              </TabsList>
 
-              <TabsContent value="edit" className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={tool === "erase" ? "default" : "secondary"}
-                    onClick={() => setTool("erase")}
-                  >
-                    <Eraser className="h-4 w-4" /> Borrar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={tool === "restore" ? "default" : "secondary"}
-                    onClick={() => setTool("restore")}
-                  >
-                    <Brush className="h-4 w-4" /> Restaurar
-                  </Button>
-                  <div className="flex w-48 items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Pincel</span>
-                    <Slider value={[brushSize]} min={4} max={150} step={1} onValueChange={(v) => setBrushSize(v[0])} />
-                    <span className="w-8 text-right text-xs tabular-nums">{brushSize}</span>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={undo}>
-                    <Undo2 className="h-4 w-4" /> Deshacer
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={resetEdit}>
-                    <Trash2 className="h-4 w-4" /> Restablecer
-                  </Button>
-                </div>
-                <div
-                  className="rounded-xl bg-[conic-gradient(at_top_left,#f1f5f9_25%,#e2e8f0_0_50%,#f1f5f9_0_75%,#e2e8f0_0)] [background-size:16px_16px] p-2"
+            <TabsContent value="source" className="mt-3">
+              <CanvasSurface>{source ? <img src={source} alt="Imagen original para vectorizar" className="max-h-[650px] max-w-full object-contain" /> : <EmptyCanvas />}</CanvasSurface>
+            </TabsContent>
+
+            <TabsContent value="vector" className="mt-3">
+              <CanvasSurface>
+                <svg
+                  ref={svgRef}
+                  viewBox={viewBox}
+                  className="h-full max-h-[650px] w-full touch-none select-none"
+                  onPointerMove={moveDrag}
+                  onPointerUp={stopDrag}
+                  onPointerCancel={stopDrag}
+                  onPointerDown={() => setSelectedId(null)}
+                  aria-label="Lienzo vectorial editable"
                 >
-                  <canvas
-                    ref={editCanvasRef}
-                    onPointerDown={onPointerDown}
-                    onPointerMove={onPointerMove}
-                    onPointerUp={onPointerUp}
-                    onPointerLeave={onPointerUp}
-                    className="mx-auto block max-w-full cursor-crosshair touch-none rounded"
-                  />
-                </div>
-              </TabsContent>
+                  {shapes.map((shape) => {
+                    if (!shape.visible) return null;
+                    const isSelected = selectedId === shape.id;
+                    return (
+                      <g key={shape.id} transform={`translate(${shape.x} ${shape.y})`} onPointerDown={(event) => startDrag(event, shape)} className="cursor-move">
+                        {isSelected && <SelectedOutline shape={shape} />}
+                        <VectorElement shape={shape} />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </CanvasSurface>
+              <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><MousePointer2 className="h-3.5 w-3.5" /> Selecciona y arrastra cualquier parte. El SVG conserva calidad a cualquier tamaño.</p>
+            </TabsContent>
+          </Tabs>
+        </main>
 
-              <TabsContent value="svg" className="space-y-3">
-                {svg && (
-                  <>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant={eraseSvgMode ? "default" : "secondary"}
-                        onClick={() => setEraseSvgMode((v) => !v)}
-                      >
-                        <MousePointerClick className="h-4 w-4" />
-                        {eraseSvgMode ? "Click para borrar trazo (activo)" : "Borrar trazos del SVG"}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleVectorize}>
-                        <Wand2 className="h-4 w-4" /> Re-vectorizar
-                      </Button>
-                      <div className="ml-auto flex items-center gap-2">
-                        <Select value={format} onValueChange={(v) => setFormat(v as VFormat)}>
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="svg">SVG</SelectItem>
-                            <SelectItem value="png">PNG</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button onClick={handleDownload}>
-                          <Download className="h-4 w-4" />
-                          Descargar
-                        </Button>
-                      </div>
-                    </div>
-                    <div
-                      ref={svgContainerRef}
-                      onClick={onSvgClick}
-                      className={`mx-auto max-h-[520px] overflow-auto rounded-xl bg-white p-2 [&_svg]:mx-auto [&_svg]:max-h-[500px] ${
-                        eraseSvgMode ? "[&_path]:cursor-pointer [&_path:hover]:opacity-40" : ""
-                      }`}
-                      dangerouslySetInnerHTML={{ __html: svg }}
-                    />
-                    {eraseSvgMode && (
-                      <p className="text-xs text-muted-foreground">
-                        Haz click sobre cualquier trazo del vector para eliminarlo.
-                      </p>
-                    )}
-                  </>
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
-        </div>
+        <aside className="min-w-0 rounded-lg border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div><p className="font-semibold">Partes</p><p className="text-xs text-muted-foreground">{shapes.length} formas separadas</p></div>
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+
+          {selected ? (
+            <section className="mb-4 space-y-3 border-b border-border pb-4">
+              <p className="truncate text-sm font-medium">{selected.id}</p>
+              <div className="grid grid-cols-[1fr_44px] items-center gap-2">
+                <label htmlFor="shape-color" className="flex items-center gap-2 text-sm text-muted-foreground"><Brush className="h-4 w-4" /> Color de la parte</label>
+                <Input id="shape-color" type="color" value={selected.attrs.fill?.startsWith("#") ? selected.attrs.fill : "#000000"} onChange={(event) => changeColor(event.target.value)} className="h-9 cursor-pointer p-1" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label htmlFor="position-x" className="text-xs text-muted-foreground">Posición X</label><Input id="position-x" type="number" value={Math.round(selected.x)} onFocus={saveHistory} onChange={(event) => updateShape(selected.id, { x: Number(event.target.value) })} /></div>
+                <div><label htmlFor="position-y" className="text-xs text-muted-foreground">Posición Y</label><Input id="position-y" type="number" value={Math.round(selected.y)} onFocus={saveHistory} onChange={(event) => updateShape(selected.id, { y: Number(event.target.value) })} /></div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full" onClick={resetPosition}><RotateCcw className="h-4 w-4" /> Restablecer posición</Button>
+            </section>
+          ) : <p className="mb-4 border-b border-border pb-4 text-sm text-muted-foreground">Selecciona una forma para editarla.</p>}
+
+          <ScrollArea className="h-[410px] pr-3">
+            <div className="space-y-1">
+              {[...shapes].reverse().map((shape) => (
+                <div key={shape.id} className={`flex items-center gap-2 rounded-md border px-2 py-2 ${selectedId === shape.id ? "border-primary bg-primary/10" : "border-transparent hover:bg-muted/60"}`}>
+                  <button type="button" className="min-w-0 flex-1 truncate text-left text-sm" onClick={() => setSelectedId(shape.id)}>{shape.id}</button>
+                  <span className="h-4 w-4 shrink-0 rounded-sm border border-border" style={{ backgroundColor: shape.attrs.fill ?? "transparent" }} />
+                  <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => toggleVisibility(shape.id)} title={shape.visible ? "Ocultar" : "Mostrar"}>
+                    {shape.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </aside>
       </div>
     </div>
   );
 }
 
-function Label({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="tabular-nums">{value}</span>
-    </div>
-  );
+function VectorElement({ shape }: { shape: VectorShape }) {
+  const props = { ...shape.attrs, vectorEffect: "non-scaling-stroke" };
+  switch (shape.tag) {
+    case "path": return <path {...props} />;
+    case "polygon": return <polygon {...props} />;
+    case "polyline": return <polyline {...props} />;
+    case "rect": return <rect {...props} />;
+    case "circle": return <circle {...props} />;
+    case "ellipse": return <ellipse {...props} />;
+  }
+}
+
+function SelectedOutline({ shape }: { shape: VectorShape }) {
+  const props = { ...shape.attrs, fill: "none", stroke: "currentColor", strokeWidth: "2", vectorEffect: "non-scaling-stroke", className: "text-primary pointer-events-none" };
+  switch (shape.tag) {
+    case "path": return <path {...props} />;
+    case "polygon": return <polygon {...props} />;
+    case "polyline": return <polyline {...props} />;
+    case "rect": return <rect {...props} />;
+    case "circle": return <circle {...props} />;
+    case "ellipse": return <ellipse {...props} />;
+  }
+}
+
+function Control({ label, value, children }: { label: string; value: number; children: React.ReactNode }) {
+  return <div className="space-y-2"><div className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span className="tabular-nums">{value}</span></div>{children}</div>;
+}
+
+function CanvasSurface({ children }: { children: React.ReactNode }) {
+  return <div className="grid h-[min(650px,68vh)] min-h-[460px] place-items-center overflow-hidden rounded-md border border-border bg-[linear-gradient(45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(-45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(45deg,transparent_75%,hsl(var(--muted))_75%),linear-gradient(-45deg,transparent_75%,hsl(var(--muted))_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-3">{children}</div>;
+}
+
+function EmptyCanvas() {
+  return <div className="text-center text-sm text-muted-foreground"><Wand2 className="mx-auto mb-2 h-10 w-10" /><p>Sube una imagen para comenzar.</p></div>;
 }
