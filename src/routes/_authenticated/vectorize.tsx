@@ -186,7 +186,7 @@ function VectorizePage() {
     updateShape(id, { visible: !shape.visible });
   }
 
-  function pointerPosition(event: React.PointerEvent<SVGSVGElement>) {
+  function pointerPosition(event: React.PointerEvent<SVGElement>) {
     const svg = svgRef.current;
     if (!svg) return null;
     const point = svg.createSVGPoint();
@@ -197,7 +197,7 @@ function VectorizePage() {
     return point.matrixTransform(matrix);
   }
 
-  function startDrag(event: React.PointerEvent<SVGSVGElement>, shape: VectorShape) {
+  function startDrag(event: React.PointerEvent<SVGGElement>, shape: VectorShape) {
     event.stopPropagation();
     const point = pointerPosition(event);
     if (!point) return;
