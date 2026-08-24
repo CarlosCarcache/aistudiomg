@@ -30,7 +30,6 @@ import { Route as AuthenticatedCropRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
-import { Route as AuthenticatedBeforeAfterRouteImport } from './routes/_authenticated/before-after'
 import { Route as AuthenticatedBackupsRouteImport } from './routes/_authenticated/backups'
 import { Route as AuthenticatedBackgroundRouteImport } from './routes/_authenticated/background'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
@@ -139,12 +138,6 @@ const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
   path: '/catalog',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedBeforeAfterRoute =
-  AuthenticatedBeforeAfterRouteImport.update({
-    id: '/before-after',
-    path: '/before-after',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedBackupsRoute = AuthenticatedBackupsRouteImport.update({
   id: '/backups',
   path: '/backups',
@@ -166,7 +159,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/background': typeof AuthenticatedBackgroundRoute
   '/backups': typeof AuthenticatedBackupsRoute
-  '/before-after': typeof AuthenticatedBeforeAfterRoute
   '/catalog': typeof AuthenticatedCatalogRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clients': typeof AuthenticatedClientsRoute
@@ -192,7 +184,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/background': typeof AuthenticatedBackgroundRoute
   '/backups': typeof AuthenticatedBackupsRoute
-  '/before-after': typeof AuthenticatedBeforeAfterRoute
   '/catalog': typeof AuthenticatedCatalogRoute
   '/chat': typeof AuthenticatedChatRoute
   '/clients': typeof AuthenticatedClientsRoute
@@ -220,7 +211,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/background': typeof AuthenticatedBackgroundRoute
   '/_authenticated/backups': typeof AuthenticatedBackupsRoute
-  '/_authenticated/before-after': typeof AuthenticatedBeforeAfterRoute
   '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
@@ -248,7 +238,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/background'
     | '/backups'
-    | '/before-after'
     | '/catalog'
     | '/chat'
     | '/clients'
@@ -274,7 +263,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/background'
     | '/backups'
-    | '/before-after'
     | '/catalog'
     | '/chat'
     | '/clients'
@@ -301,7 +289,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/background'
     | '/_authenticated/backups'
-    | '/_authenticated/before-after'
     | '/_authenticated/catalog'
     | '/_authenticated/chat'
     | '/_authenticated/clients'
@@ -480,13 +467,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatalogRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/before-after': {
-      id: '/_authenticated/before-after'
-      path: '/before-after'
-      fullPath: '/before-after'
-      preLoaderRoute: typeof AuthenticatedBeforeAfterRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/backups': {
       id: '/_authenticated/backups'
       path: '/backups'
@@ -514,7 +494,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedBackgroundRoute: typeof AuthenticatedBackgroundRoute
   AuthenticatedBackupsRoute: typeof AuthenticatedBackupsRoute
-  AuthenticatedBeforeAfterRoute: typeof AuthenticatedBeforeAfterRoute
   AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
@@ -537,7 +516,6 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBackgroundRoute: AuthenticatedBackgroundRoute,
   AuthenticatedBackupsRoute: AuthenticatedBackupsRoute,
-  AuthenticatedBeforeAfterRoute: AuthenticatedBeforeAfterRoute,
   AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
