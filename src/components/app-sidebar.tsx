@@ -12,7 +12,6 @@ import {
   Sparkles,
   Layers,
   Crop,
-  GitCompare,
   Images,
   GalleryHorizontalEnd,
   BookOpen,
@@ -53,7 +52,6 @@ const tools: Item[] = [
   { title: "Fondos", url: "/background", icon: Layers },
   { title: "Semitono (DTF)", url: "/halftone", icon: CircleDot },
   { title: "Mejorar calidad", url: "/quality", icon: Sparkles },
-  { title: "Antes / Después", url: "/before-after", icon: GitCompare },
 ];
 
 const business: Item[] = [
