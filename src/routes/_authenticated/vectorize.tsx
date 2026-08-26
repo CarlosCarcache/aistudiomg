@@ -2,16 +2,24 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Brush,
+  Copy,
+  CopyPlus,
   Download,
   Eye,
   EyeOff,
   GripVertical,
   Loader2,
+  Maximize2,
   MousePointer2,
+  Pipette,
+  Redo2,
   RotateCcw,
   Trash2,
   Undo2,
   Wand2,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import ImageTracer from "imagetracerjs";
 import { toast } from "sonner";
@@ -47,14 +55,52 @@ type VectorShape = {
   x: number;
   y: number;
   visible: boolean;
+  blendMode: BlendMode;
 };
 type Snapshot = { shapes: VectorShape[]; selectedId: string | null };
 type ExportFormat = "svg" | "png";
+type BlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten";
 
 const VECTOR_TAGS = new Set<VectorTag>(["path", "polygon", "polyline", "rect", "circle", "ellipse"]);
+const COLOR_SWATCHES = ["#000000", "#333333", "#666666", "#999999", "#cccccc", "#ffffff", "#ec4899", "#a855f7"];
 
 function cloneShapes(shapes: VectorShape[]) {
   return shapes.map((shape) => ({ ...shape, attrs: { ...shape.attrs } }));
+}
+
+function colorToHex(color?: string) {
+  if (!color) return "#000000";
+  if (/^#[0-9a-f]{6}$/i.test(color)) return color.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(color)) return `#${color.slice(1).split("").map((part) => part + part).join("")}`.toLowerCase();
+  const rgb = color.match(/rgba?\(\s*(\d+)\D+(\d+)\D+(\d+)/i);
+  if (!rgb) return "#000000";
+  return `#${[rgb[1], rgb[2], rgb[3]].map((part) => Math.min(255, Number(part)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function hexToHsv(hex: string) {
+  const value = colorToHex(hex);
+  const r = Number.parseInt(value.slice(1, 3), 16) / 255;
+  const g = Number.parseInt(value.slice(3, 5), 16) / 255;
+  const b = Number.parseInt(value.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let h = 0;
+  if (delta) {
+    if (max === r) h = 60 * (((g - b) / delta) % 6);
+    else if (max === g) h = 60 * ((b - r) / delta + 2);
+    else h = 60 * ((r - g) / delta + 4);
+  }
+  return { h: h < 0 ? h + 360 : h, s: max ? delta / max : 0, v: max };
+}
+
+function hsvToHex(h: number, s: number, v: number) {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  const sector = Math.floor(h / 60) % 6;
+  const [r, g, b] = sector === 0 ? [c, x, 0] : sector === 1 ? [x, c, 0] : sector === 2 ? [0, c, x] : sector === 3 ? [0, x, c] : sector === 4 ? [x, 0, c] : [c, 0, x];
+  return `#${[r, g, b].map((part) => Math.round((part + m) * 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
 function parseVector(svgText: string) {
@@ -70,7 +116,7 @@ function parseVector(svgText: string) {
     Array.from(node.attributes).forEach((attribute) => {
       if (attribute.name !== "transform") attrs[attribute.name] = attribute.value;
     });
-    shapes.push({ id: `forma-${index + 1}`, tag, attrs, x: 0, y: 0, visible: true });
+    shapes.push({ id: `forma-${index + 1}`, tag, attrs, x: 0, y: 0, visible: true, blendMode: "normal" });
   });
 
   return { shapes, viewBox };
@@ -87,7 +133,8 @@ function serializeSvg(shapes: VectorShape[], viewBox: string) {
       const attrs = Object.entries(shape.attrs)
         .map(([key, value]) => `${key}="${escapeAttribute(value)}"`)
         .join(" ");
-      return `<${shape.tag} ${attrs} transform="translate(${shape.x} ${shape.y})"/>`;
+      const blend = shape.blendMode === "normal" ? "" : ` style="mix-blend-mode:${shape.blendMode}"`;
+      return `<${shape.tag} ${attrs} transform="translate(${shape.x} ${shape.y})"${blend}/>`;
     })
     .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${escapeAttribute(viewBox)}">${body}</svg>`;
@@ -106,9 +153,17 @@ function VectorizePage() {
   const [format, setFormat] = useState<ExportFormat>("svg");
   const [pngScale, setPngScale] = useState(4);
   const [activeTab, setActiveTab] = useState("source");
+  const [zoom, setZoom] = useState(1);
+  const [zoomOffset, setZoomOffset] = useState({ x: 0, y: 0 });
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const [eyedropperTargetId, setEyedropperTargetId] = useState<string | null>(null);
   const historyRef = useRef<Snapshot[]>([]);
+  const redoRef = useRef<Snapshot[]>([]);
+  const clipboardRef = useRef<VectorShape | null>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; originX: number; originY: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef({ zoom, offset: zoomOffset });
 
   const selected = useMemo(() => shapes.find((shape) => shape.id === selectedId) ?? null, [shapes, selectedId]);
 
@@ -116,16 +171,54 @@ function VectorizePage() {
     if (!selectedId && shapes.length) setSelectedId(shapes[shapes.length - 1].id);
   }, [selectedId, shapes]);
 
+  useEffect(() => {
+    zoomRef.current = { zoom, offset: zoomOffset };
+  }, [zoom, zoomOffset]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const current = zoomRef.current;
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1);
+      const nextZoom = Math.min(8, Math.max(0.25, current.zoom * Math.exp(-delta * 0.0015)));
+      const rect = canvas.getBoundingClientRect();
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      const factor = nextZoom / current.zoom;
+      setZoomOffset({ x: px - (px - current.offset.x) * factor, y: py - (py - current.offset.y) * factor });
+      setZoom(nextZoom);
+    };
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, []);
+
   function saveHistory() {
     historyRef.current.push({ shapes: cloneShapes(shapes), selectedId });
     if (historyRef.current.length > 40) historyRef.current.shift();
+    redoRef.current = [];
+    setHistoryVersion((value) => value + 1);
   }
 
   function undo() {
     const snapshot = historyRef.current.pop();
     if (!snapshot) return;
+    redoRef.current.push({ shapes: cloneShapes(shapes), selectedId });
     setShapes(snapshot.shapes);
     setSelectedId(snapshot.selectedId);
+    setEyedropperTargetId(null);
+    setHistoryVersion((value) => value + 1);
+  }
+
+  function redo() {
+    const snapshot = redoRef.current.pop();
+    if (!snapshot) return;
+    historyRef.current.push({ shapes: cloneShapes(shapes), selectedId });
+    setShapes(snapshot.shapes);
+    setSelectedId(snapshot.selectedId);
+    setEyedropperTargetId(null);
+    setHistoryVersion((value) => value + 1);
   }
 
   async function vectorize() {
@@ -150,6 +243,7 @@ function VectorizePage() {
       const parsed = parseVector(traced);
       if (!parsed.shapes.length) throw new Error("No se detectaron formas en la imagen");
       historyRef.current = [];
+      redoRef.current = [];
       setShapes(parsed.shapes);
       setViewBox(parsed.viewBox);
       setSelectedId(parsed.shapes[parsed.shapes.length - 1].id);
@@ -170,6 +264,72 @@ function VectorizePage() {
     if (!selected) return;
     saveHistory();
     updateShape(selected.id, { attrs: { ...selected.attrs, fill: color } });
+  }
+
+  function changeHsv(channel: "h" | "v", value: number) {
+    if (!selected) return;
+    const hsv = hexToHsv(selected.attrs.fill);
+    const fill = hsvToHex(channel === "h" ? value : hsv.h, hsv.s, channel === "v" ? value / 100 : hsv.v);
+    updateShape(selected.id, { attrs: { ...selected.attrs, fill } });
+  }
+
+  function changeAttribute(attribute: string, value: string) {
+    if (!selected) return;
+    updateShape(selected.id, { attrs: { ...selected.attrs, [attribute]: value } });
+  }
+
+  function duplicateSelected() {
+    if (!selected) return;
+    saveHistory();
+    const copy = { ...selected, id: `forma-${Date.now()}`, attrs: { ...selected.attrs }, x: selected.x + 12, y: selected.y + 12 };
+    setShapes((current) => [...current, copy]);
+    setSelectedId(copy.id);
+  }
+
+  async function copySelected() {
+    if (!selected) return;
+    clipboardRef.current = { ...selected, attrs: { ...selected.attrs } };
+    const svg = serializeSvg([{ ...selected, x: 0, y: 0 }], viewBox);
+    try {
+      await navigator.clipboard.writeText(svg);
+      toast.success("Forma copiada como SVG");
+    } catch {
+      toast.success("Forma copiada en el editor");
+    }
+  }
+
+  function sampleColor(event: React.PointerEvent<SVGGElement>, shape: VectorShape) {
+    if (!eyedropperTargetId) return false;
+    event.stopPropagation();
+    const target = shapes.find((item) => item.id === eyedropperTargetId);
+    if (target) {
+      saveHistory();
+      updateShape(target.id, { attrs: { ...target.attrs, fill: colorToHex(shape.attrs.fill) } });
+      setSelectedId(target.id);
+      toast.success("Color aplicado");
+    }
+    setEyedropperTargetId(null);
+    return true;
+  }
+
+  function setCanvasZoom(nextZoom: number) {
+    const canvas = canvasRef.current;
+    const current = zoomRef.current;
+    const bounded = Math.min(8, Math.max(0.25, nextZoom));
+    if (!canvas) {
+      setZoom(bounded);
+      return;
+    }
+    const px = canvas.clientWidth / 2;
+    const py = canvas.clientHeight / 2;
+    const factor = bounded / current.zoom;
+    setZoomOffset({ x: px - (px - current.offset.x) * factor, y: py - (py - current.offset.y) * factor });
+    setZoom(bounded);
+  }
+
+  function fitCanvas() {
+    setZoom(1);
+    setZoomOffset({ x: 0, y: 0 });
   }
 
   function removeSelected() {
@@ -199,6 +359,7 @@ function VectorizePage() {
 
   function startDrag(event: React.PointerEvent<SVGGElement>, shape: VectorShape) {
     event.stopPropagation();
+    if (sampleColor(event, shape)) return;
     const point = pointerPosition(event);
     if (!point) return;
     saveHistory();
@@ -304,9 +465,14 @@ function VectorizePage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <div className="flex items-center justify-between gap-3">
               <TabsList><TabsTrigger value="source">Original</TabsTrigger><TabsTrigger value="vector" disabled={!shapes.length}>Vector editable</TabsTrigger></TabsList>
-              <div className="flex gap-1">
-                <Button size="icon" variant="ghost" onClick={undo} disabled={!historyRef.current.length} title="Deshacer"><Undo2 className="h-4 w-4" /></Button>
+              <div className="flex flex-wrap justify-end gap-1">
+                <Button size="icon" variant="ghost" onClick={undo} disabled={!historyRef.current.length || historyVersion < 0} title="Deshacer"><Undo2 className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={redo} disabled={!redoRef.current.length || historyVersion < 0} title="Rehacer"><Redo2 className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={copySelected} disabled={!selected} title="Copiar como SVG"><Copy className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={duplicateSelected} disabled={!selected} title="Duplicar forma"><CopyPlus className="h-4 w-4" /></Button>
+                <Button size="icon" variant={eyedropperTargetId ? "secondary" : "ghost"} onClick={() => setEyedropperTargetId(selected?.id ?? null)} disabled={!selected} title="Tomar color de otra forma"><Pipette className="h-4 w-4" /></Button>
                 <Button size="icon" variant="ghost" onClick={removeSelected} disabled={!selected} title="Eliminar forma"><Trash2 className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => { setSelectedId(null); setEyedropperTargetId(null); }} disabled={!selected} title="Deseleccionar"><X className="h-4 w-4" /></Button>
               </div>
             </div>
 
@@ -315,29 +481,39 @@ function VectorizePage() {
             </TabsContent>
 
             <TabsContent value="vector" className="mt-3">
-              <CanvasSurface>
-                <svg
-                  ref={svgRef}
-                  viewBox={viewBox}
-                  className="h-full max-h-[650px] w-full touch-none select-none"
-                  onPointerMove={moveDrag}
-                  onPointerUp={stopDrag}
-                  onPointerCancel={stopDrag}
-                  onPointerDown={() => setSelectedId(null)}
-                  aria-label="Lienzo vectorial editable"
-                >
-                  {shapes.map((shape) => {
-                    if (!shape.visible) return null;
-                    const isSelected = selectedId === shape.id;
-                    return (
-                      <g key={shape.id} transform={`translate(${shape.x} ${shape.y})`} onPointerDown={(event) => startDrag(event, shape)} className="cursor-move">
-                        {isSelected && <SelectedOutline shape={shape} />}
-                        <VectorElement shape={shape} />
-                      </g>
-                    );
-                  })}
-                </svg>
-              </CanvasSurface>
+              <div className="relative">
+                <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-md border border-border bg-card p-1 shadow-sm">
+                  <Button size="icon" variant="ghost" onClick={() => setCanvasZoom(zoom / 1.25)} title="Alejar"><ZoomOut className="h-4 w-4" /></Button>
+                  <span className="w-14 text-center text-xs tabular-nums">{Math.round(zoom * 100)}%</span>
+                  <Button size="icon" variant="ghost" onClick={() => setCanvasZoom(zoom * 1.25)} title="Acercar"><ZoomIn className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={fitCanvas} title="Ajustar al lienzo"><Maximize2 className="h-4 w-4" /></Button>
+                </div>
+                <CanvasSurface ref={canvasRef}>
+                  <div className="grid h-full w-full place-items-center" style={{ transform: `translate(${zoomOffset.x}px, ${zoomOffset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}>
+                    <svg
+                      ref={svgRef}
+                      viewBox={viewBox}
+                      className={`h-full max-h-[650px] w-full touch-none select-none ${eyedropperTargetId ? "cursor-crosshair" : ""}`}
+                      onPointerMove={moveDrag}
+                      onPointerUp={stopDrag}
+                      onPointerCancel={stopDrag}
+                      onPointerDown={() => { if (!eyedropperTargetId) setSelectedId(null); }}
+                      aria-label="Lienzo vectorial editable"
+                    >
+                      {shapes.map((shape) => {
+                        if (!shape.visible) return null;
+                        const isSelected = selectedId === shape.id;
+                        return (
+                          <g key={shape.id} transform={`translate(${shape.x} ${shape.y})`} onPointerDown={(event) => startDrag(event, shape)} className={eyedropperTargetId ? "cursor-crosshair" : "cursor-move"} style={{ mixBlendMode: shape.blendMode }}>
+                            {isSelected && <SelectedOutline shape={shape} />}
+                            <VectorElement shape={shape} />
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                </CanvasSurface>
+              </div>
               <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><MousePointer2 className="h-3.5 w-3.5" /> Selecciona y arrastra cualquier parte. El SVG conserva calidad a cualquier tamaño.</p>
             </TabsContent>
           </Tabs>
@@ -352,9 +528,33 @@ function VectorizePage() {
           {selected ? (
             <section className="mb-4 space-y-3 border-b border-border pb-4">
               <p className="truncate text-sm font-medium">{selected.id}</p>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Color de relleno</p>
+                <div className="grid grid-cols-8 gap-1">
+                  {COLOR_SWATCHES.map((color) => <button key={color} type="button" aria-label={`Aplicar color ${color}`} title={color} className="aspect-square rounded-sm border border-border" style={{ backgroundColor: color }} onClick={() => changeColor(color)} />)}
+                </div>
+              </div>
               <div className="grid grid-cols-[1fr_44px] items-center gap-2">
                 <label htmlFor="shape-color" className="flex items-center gap-2 text-sm text-muted-foreground"><Brush className="h-4 w-4" /> Color de la parte</label>
-                <Input id="shape-color" type="color" value={selected.attrs.fill?.startsWith("#") ? selected.attrs.fill : "#000000"} onChange={(event) => changeColor(event.target.value)} className="h-9 cursor-pointer p-1" />
+                <Input id="shape-color" type="color" value={colorToHex(selected.attrs.fill)} onChange={(event) => changeColor(event.target.value)} className="h-9 cursor-pointer p-1" />
+              </div>
+              <Control label="Matiz HSB" value={Math.round(hexToHsv(selected.attrs.fill).h)}><Slider value={[hexToHsv(selected.attrs.fill).h]} min={0} max={360} step={1} onPointerDown={saveHistory} onValueChange={(value) => changeHsv("h", value[0] ?? 0)} /></Control>
+              <Control label="Brillo" value={Math.round(hexToHsv(selected.attrs.fill).v * 100)}><Slider value={[hexToHsv(selected.attrs.fill).v * 100]} min={0} max={100} step={1} onPointerDown={saveHistory} onValueChange={(value) => changeHsv("v", value[0] ?? 0)} /></Control>
+              <Control label="Opacidad" value={Math.round(Number(selected.attrs.opacity ?? 1) * 100)}><Slider value={[Number(selected.attrs.opacity ?? 1) * 100]} min={0} max={100} step={1} onPointerDown={saveHistory} onValueChange={(value) => changeAttribute("opacity", String((value[0] ?? 100) / 100))} /></Control>
+              <div className="space-y-2 border-t border-border pt-3">
+                <p className="text-xs font-medium text-muted-foreground">Contorno</p>
+                <div className="grid grid-cols-[1fr_44px] items-center gap-2">
+                  <label htmlFor="stroke-color" className="text-sm text-muted-foreground">Color</label>
+                  <Input id="stroke-color" type="color" value={colorToHex(selected.attrs.stroke)} onFocus={saveHistory} onChange={(event) => changeAttribute("stroke", event.target.value)} className="h-9 cursor-pointer p-1" />
+                </div>
+                <Control label="Grosor" value={Number(selected.attrs["stroke-width"] ?? 0)}><Slider value={[Number(selected.attrs["stroke-width"] ?? 0)]} min={0} max={30} step={0.5} onPointerDown={saveHistory} onValueChange={(value) => changeAttribute("stroke-width", String(value[0] ?? 0))} /></Control>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="blend-mode">Modo de mezcla</label>
+                <Select value={selected.blendMode} onValueChange={(value) => { saveHistory(); updateShape(selected.id, { blendMode: value as BlendMode }); }}>
+                  <SelectTrigger id="blend-mode" className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="normal">Normal</SelectItem><SelectItem value="multiply">Multiplicar</SelectItem><SelectItem value="screen">Trama</SelectItem><SelectItem value="overlay">Superponer</SelectItem><SelectItem value="darken">Oscurecer</SelectItem><SelectItem value="lighten">Aclarar</SelectItem></SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div><label htmlFor="position-x" className="text-xs text-muted-foreground">Posición X</label><Input id="position-x" type="number" value={Math.round(selected.x)} onFocus={saveHistory} onChange={(event) => updateShape(selected.id, { x: Number(event.target.value) })} /></div>
@@ -411,8 +611,8 @@ function Control({ label, value, children }: { label: string; value: number; chi
   return <div className="space-y-2"><div className="flex justify-between text-xs"><span className="text-muted-foreground">{label}</span><span className="tabular-nums">{value}</span></div>{children}</div>;
 }
 
-function CanvasSurface({ children }: { children: React.ReactNode }) {
-  return <div className="grid h-[min(650px,68vh)] min-h-[460px] place-items-center overflow-hidden rounded-md border border-border bg-[linear-gradient(45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(-45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(45deg,transparent_75%,hsl(var(--muted))_75%),linear-gradient(-45deg,transparent_75%,hsl(var(--muted))_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-3">{children}</div>;
+const CanvasSurface = ({ children, ref }: { children: React.ReactNode; ref?: React.Ref<HTMLDivElement> }) => {
+  return <div ref={ref} className="grid h-[min(650px,68vh)] min-h-[460px] place-items-center overflow-hidden rounded-md border border-border bg-[linear-gradient(45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(-45deg,hsl(var(--muted))_25%,transparent_25%),linear-gradient(45deg,transparent_75%,hsl(var(--muted))_75%),linear-gradient(-45deg,transparent_75%,hsl(var(--muted))_75%)] bg-[length:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0] p-3">{children}</div>;
 }
 
 function EmptyCanvas() {
