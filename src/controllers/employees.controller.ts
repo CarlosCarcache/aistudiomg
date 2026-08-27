@@ -1,20 +1,20 @@
-// Controller: clientes (CRUD sobre la tabla `clients`).
+// Controller: empleados (CRUD sobre la tabla `employees`).
 import { supabase } from "@/integrations/supabase/client";
-import type { Client, NewClient, UpdateClient } from "@/models/types";
+import type { Employee, NewEmployee, UpdateEmployee } from "@/models/types";
 
-export const clientsController = {
-  async list(): Promise<Client[]> {
+export const employeesController = {
+  async list(): Promise<Employee[]> {
     const { data, error } = await supabase
-      .from("clients")
+      .from("employees")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
   },
 
-  async create(input: NewClient): Promise<Client> {
+  async create(input: NewEmployee): Promise<Employee> {
     const { data, error } = await supabase
-      .from("clients")
+      .from("employees")
       .insert(input)
       .select()
       .single();
@@ -22,9 +22,9 @@ export const clientsController = {
     return data;
   },
 
-  async update(id: string, input: UpdateClient): Promise<Client> {
+  async update(id: string, input: UpdateEmployee): Promise<Employee> {
     const { data, error } = await supabase
-      .from("clients")
+      .from("employees")
       .update(input)
       .eq("id", id)
       .select()
@@ -34,7 +34,7 @@ export const clientsController = {
   },
 
   async remove(id: string) {
-    const { error } = await supabase.from("clients").delete().eq("id", id);
+    const { error } = await supabase.from("employees").delete().eq("id", id);
     if (error) throw error;
   },
 };
