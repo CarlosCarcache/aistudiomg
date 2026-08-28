@@ -41,3 +41,5 @@ export type NewGalleryImage =
   Database["public"]["Tables"]["gallery_images"]["Insert"];
 export type UpdateGalleryImage =
   Database["public"]["Tables"]["gallery_images"]["Update"];
+
+export type GalleryShare = Database["public"]["Tables"]["gallery_shares"]["Row"];
