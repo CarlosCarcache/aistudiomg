@@ -125,7 +125,8 @@ function GalleryPage() {
         );
       }
       setImages((prev) => [...created, ...prev]);
-      setUrls((prev) => ({ ...prev, ...(await galleryController.resolveMany(created)) }));
+      const newUrls = await galleryController.resolveMany(created);
+      setUrls((prev) => ({ ...prev, ...newUrls }));
       setForm((f) => ({ ...f, title: "" }));
       toast.success(`${created.length} imagen(es) subida(s)`);
     } catch {
