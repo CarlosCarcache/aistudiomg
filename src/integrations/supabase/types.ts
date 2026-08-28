@@ -210,6 +210,41 @@ export type Database = {
           },
         ]
       }
+      gallery_shares: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          token?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_shares_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           client_id: string | null
@@ -434,6 +469,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_gallery: {
+        Args: { _token: string }
+        Returns: {
+          category_id: string | null
+          client_id: string | null
+          created_at: string
+          id: string
+          image_url: string
+          is_portfolio: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "gallery_images"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
