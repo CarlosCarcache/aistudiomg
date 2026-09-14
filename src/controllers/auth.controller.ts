@@ -1,17 +1,19 @@
-// Controller: autenticación (OTP por email) y sesión.
+// Controller: autenticación (usuario + contraseña) y sesión.
 import { supabase } from "@/integrations/supabase/client";
 import type { AppRole } from "@/models/types";
 
-export const authController = {
-  async sendOtp(email: string) {
-    return supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-  },
+// El usuario escribe un nombre de usuario; internamente se convierte en un
+// correo interno estable para la autenticación.
+export function usernameToEmail(username: string) {
+  return `${username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "")}@app.local`;
+}
 
-  async verifyOtp(email: string, token: string) {
-    return supabase.auth.verifyOtp({ email, token, type: "email" });
+export const authController = {
+  async signIn(username: string, password: string) {
+    return supabase.auth.signInWithPassword({
+      email: usernameToEmail(username),
+      password,
+    });
   },
 
   async signOut() {

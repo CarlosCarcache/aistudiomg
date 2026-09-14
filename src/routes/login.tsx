@@ -1,28 +1,40 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authController } from "@/controllers/auth.controller";
 
 export const Route = createFileRoute("/login")({
+  ssr: false,
   component: LoginPage,
+  head: () => ({
+    meta: [
+      { title: "Iniciar sesión | AI Studio MG" },
+      {
+        name: "description",
+        content:
+          "Accede a AI Studio MG con tu usuario y contraseña para gestionar diseños, pedidos y galería.",
+      },
+      { property: "og:title", content: "Iniciar sesión | AI Studio MG" },
+      {
+        property: "og:description",
+        content: "Acceso al estudio de diseño asistido por IA de AI Studio MG.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function LoginPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -31,30 +43,17 @@ function LoginPage() {
     });
   }, [navigate]);
 
-  const requestCode = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!username.trim() || !password) return;
     setLoading(true);
-    const { error } = await authController.sendOtp(email.trim());
+    const { error } = await authController.signIn(username, password);
     setLoading(false);
     if (error) {
-      console.error("[login] OTP send error:", error);
-      toast.error("No pudimos enviar el código", { description: "Verifica tu correo e intenta de nuevo." });
-      return;
-    }
-    toast.success("Código enviado", {
-      description: `Revisa ${email} y escribe el código de 6 dígitos.`,
-    });
-    setStep("code");
-  };
-
-  const verify = async (value: string) => {
-    setLoading(true);
-    const { error } = await authController.verifyOtp(email.trim(), value);
-    setLoading(false);
-    if (error) {
-      console.error("[login] OTP verify error:", error);
-      toast.error("Código incorrecto", { description: "Revisa el código e intenta de nuevo." });
+      console.error("[login] error:", error);
+      toast.error("No pudimos iniciar sesión", {
+        description: "Revisa tu usuario y contraseña.",
+      });
       return;
     }
     toast.success("Bienvenido a AI Studio MG");
@@ -76,79 +75,55 @@ function LoginPage() {
         <div className="mb-6 flex justify-center"><BrandLogo size="lg" /></div>
 
         <div className="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur brand-ring">
-          {step === "email" ? (
-            <>
-              <div className="mb-5 text-center">
-                <h1 className="text-xl font-semibold tracking-tight">Iniciar sesión</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Te enviaremos un código de 6 dígitos a tu correo.
-                </p>
-              </div>
-              <form onSubmit={requestCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo electrónico</Label>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      placeholder="tu@correo.com"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar código"}
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <div className="mb-5 text-center">
-                <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-                <h1 className="text-xl font-semibold tracking-tight">Código de verificación</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Escribe el código que enviamos a <span className="text-foreground">{email}</span>
-                </p>
-              </div>
-              <div className="flex flex-col items-center gap-4">
-                <InputOTP
-                  maxLength={6}
-                  value={code}
-                  onChange={(v) => {
-                    setCode(v);
-                    if (v.length === 6) verify(v);
-                  }}
-                >
-                  <InputOTPGroup>
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot key={i} index={i} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
+          <div className="mb-5 text-center">
+            <h1 className="text-xl font-semibold tracking-tight">Iniciar sesión</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ingresa con tu usuario y contraseña.
+            </p>
+          </div>
 
-                <Button
-                  variant="link"
-                  size="sm"
-                  type="button"
-                  onClick={() => { setStep("email"); setCode(""); }}
-                  disabled={loading}
-                >
-                  Usar otro correo
-                </Button>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Usuario</Label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="username"
+                  required
+                  placeholder="MGMarvinSA"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            </>
-          )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Entrar"}
+            </Button>
+          </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Al continuar aceptas el uso seguro de tu correo para autenticación.
+          Acceso restringido. Solicita tus credenciales al administrador.
         </p>
       </main>
     </div>
