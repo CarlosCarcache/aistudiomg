@@ -90,7 +90,7 @@ function LoginPage() {
                 <Input
                   id="username"
                   required
-                  placeholder="MGMarvinSA"
+                  placeholder="user password"
                   autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
