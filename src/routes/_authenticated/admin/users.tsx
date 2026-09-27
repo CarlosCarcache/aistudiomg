@@ -3,7 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Search, Trash2, Plus } from "lucide-react";
+import { Loader2, Search, Trash2, Plus, UserPlus, KeyRound, ShieldCheck } from "lucide-react";
+import { CreateUserDialog, PasswordDialog, PermissionsDialog } from "@/views/admin/UserDialogs";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/views/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { listUsersWithRoles, setUserRole } from "@/lib/admin-users.functions";
+import { listUsersWithRoles, setUserRole, deleteUser } from "@/lib/admin-users.functions";
 import type { AppRole } from "@/models/types";
 
 const ROLES: AppRole[] = ["admin", "editor", "viewer"];
@@ -51,6 +52,20 @@ function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [adding, setAdding] = useState<Record<string, AppRole>>({});
+  const [creating, setCreating] = useState(false);
+  const [pwUser, setPwUser] = useState<{ id: string; name: string } | null>(null);
+  const [permUser, setPermUser] = useState<{ id: string; name: string } | null>(null);
+  const deleteFn = useServerFn(deleteUser);
+  const removeUser = async (id: string, name: string) => {
+    if (!confirm(`¿Eliminar al usuario ${name}?`)) return;
+    try {
+      await deleteFn({ data: { userId: id } });
+      toast.success("Usuario eliminado");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -91,7 +106,8 @@ function AdminUsersPage() {
           description="Asigna o quita roles. Solo administradores pueden modificar esta información."
         />
 
-        <div className="relative max-w-md">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
@@ -100,6 +116,11 @@ function AdminUsersPage() {
             className="pl-9"
           />
         </div>
+        <Button onClick={() => setCreating(true)}><UserPlus className="h-4 w-4" /> Nuevo usuario</Button>
+        </div>
+        <CreateUserDialog open={creating} onOpenChange={setCreating} />
+        <PasswordDialog user={pwUser} onClose={() => setPwUser(null)} />
+        <PermissionsDialog user={permUser} onClose={() => setPermUser(null)} />
 
         <div className="rounded-xl border border-border bg-card">
           <Table>
@@ -109,18 +130,19 @@ function AdminUsersPage() {
                 <TableHead>Roles</TableHead>
                 <TableHead>Último acceso</TableHead>
                 <TableHead className="text-right">Asignar rol</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center">
+                  <TableCell colSpan={5} className="py-10 text-center">
                     <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
                     Sin usuarios.
                   </TableCell>
                 </TableRow>
@@ -200,6 +222,13 @@ function AdminUsersPage() {
                             </Button>
                           </div>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="icon" variant="ghost" title="Permisos CRUD" onClick={() => setPermUser({ id: u.id, name: u.display_name ?? u.email })}><ShieldCheck className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Cambiar contraseña" onClick={() => setPwUser({ id: u.id, name: u.display_name ?? u.email })}><KeyRound className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Eliminar" onClick={() => removeUser(u.id, u.display_name ?? u.email)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
