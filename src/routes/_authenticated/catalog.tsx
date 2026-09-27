@@ -4,6 +4,7 @@ import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
+import { ImageDropzone, type DroppedFile } from "@/components/image-dropzone";
 import { catalogController } from "@/controllers/catalog.controller";
 import type { Product, ProductCategory } from "@/models/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -57,6 +58,7 @@ function CatalogPage() {
     category_id: "",
   });
   const [saving, setSaving] = useState(false);
+  const [localImage, setLocalImage] = useState<DroppedFile | null>(null);
 
   useEffect(() => {
     Promise.all([
