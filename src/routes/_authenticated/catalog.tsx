@@ -4,6 +4,7 @@ import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
+import { ImageDropzone, type DroppedFile } from "@/components/image-dropzone";
 import { catalogController } from "@/controllers/catalog.controller";
 import type { Product, ProductCategory } from "@/models/types";
 import { useAuth } from "@/hooks/use-auth";
@@ -57,6 +58,7 @@ function CatalogPage() {
     category_id: "",
   });
   const [saving, setSaving] = useState(false);
+  const [localImage, setLocalImage] = useState<DroppedFile | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -107,16 +109,25 @@ function CatalogPage() {
     if (!user) return toast.error("Inicia sesión para crear productos");
     setSaving(true);
     try {
+      let imageUrl = prod.image_url.trim() || null;
+      if (localImage) {
+        imageUrl = await catalogController.uploadProductImage(
+          user.id,
+          localImage.file,
+        );
+      }
       const created = await catalogController.createProduct({
         user_id: user.id,
         name: prod.name.trim(),
         description: prod.description.trim() || null,
         price: prod.price ? Number(prod.price) : null,
-        image_url: prod.image_url.trim() || null,
+        image_url: imageUrl,
         category_id: prod.category_id || null,
       });
-      setProducts((p) => [created, ...p]);
+      const [signed] = await catalogController.withSignedUrls([created]);
+      setProducts((p) => [signed, ...p]);
       setProd({ name: "", description: "", price: "", image_url: "", category_id: "" });
+      setLocalImage(null);
       toast.success("Producto creado");
     } catch {
       toast.error("No se pudo crear el producto");
@@ -234,12 +245,19 @@ function CatalogPage() {
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="p_img">URL de imagen</Label>
+            <Label>Imagen del producto</Label>
+            <ImageDropzone
+              hint="Arrastra una imagen de tu ordenador o haz click"
+              preview={localImage?.dataUrl ?? null}
+              onClear={() => setLocalImage(null)}
+              onFiles={(files) => setLocalImage(files[0] ?? null)}
+            />
             <Input
               id="p_img"
-              placeholder="https://…"
+              placeholder="…o pega una URL de imagen (https://…)"
               value={prod.image_url}
               onChange={(e) => setProd({ ...prod, image_url: e.target.value })}
+              disabled={!!localImage}
             />
           </div>
           <div className="space-y-2 md:col-span-3">
