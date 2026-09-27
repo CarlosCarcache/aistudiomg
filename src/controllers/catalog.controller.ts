@@ -57,7 +57,31 @@ export const catalogController = {
       .select("*")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    return this.withSignedUrls(data ?? []);
+  },
+
+  // Sube una imagen local al bucket privado "products" y devuelve su ruta.
+  async uploadProductImage(userId: string, file: File): Promise<string> {
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${userId}/${Date.now()}-${safe}`;
+    const { error } = await supabase.storage
+      .from("products")
+      .upload(path, file, { contentType: file.type });
+    if (error) throw error;
+    return path;
+  },
+
+  // Convierte rutas del bucket en URLs firmadas (válidas 1 hora).
+  async withSignedUrls(products: Product[]): Promise<Product[]> {
+    return Promise.all(
+      products.map(async (p) => {
+        if (!p.image_url || /^(https?:|data:)/.test(p.image_url)) return p;
+        const { data } = await supabase.storage
+          .from("products")
+          .createSignedUrl(p.image_url, 3600);
+        return { ...p, image_url: data?.signedUrl ?? p.image_url };
+      }),
+    );
   },
 
   async createProduct(input: NewProduct): Promise<Product> {
