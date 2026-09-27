@@ -109,16 +109,25 @@ function CatalogPage() {
     if (!user) return toast.error("Inicia sesión para crear productos");
     setSaving(true);
     try {
+      let imageUrl = prod.image_url.trim() || null;
+      if (localImage) {
+        imageUrl = await catalogController.uploadProductImage(
+          user.id,
+          localImage.file,
+        );
+      }
       const created = await catalogController.createProduct({
         user_id: user.id,
         name: prod.name.trim(),
         description: prod.description.trim() || null,
         price: prod.price ? Number(prod.price) : null,
-        image_url: prod.image_url.trim() || null,
+        image_url: imageUrl,
         category_id: prod.category_id || null,
       });
-      setProducts((p) => [created, ...p]);
+      const [signed] = await catalogController.withSignedUrls([created]);
+      setProducts((p) => [signed, ...p]);
       setProd({ name: "", description: "", price: "", image_url: "", category_id: "" });
+      setLocalImage(null);
       toast.success("Producto creado");
     } catch {
       toast.error("No se pudo crear el producto");
