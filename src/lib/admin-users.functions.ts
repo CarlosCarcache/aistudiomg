@@ -89,3 +89,94 @@ export const setUserRole = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+export const MODULES = ["projects", "orders", "clients", "employees", "catalog", "gallery", "portfolio"] as const;
+
+export const createUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/),
+      password: z.string().min(8).max(72),
+      role: z.enum(ROLES),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const email = `${data.username.toLowerCase()}@app.local`;
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { display_name: data.username },
+    });
+    if (error || !created.user) throw new Error("No se pudo crear el usuario (¿ya existe?)");
+    if (data.role !== "viewer") {
+      await supabaseAdmin.from("user_roles").upsert(
+        { user_id: created.user.id, role: data.role },
+        { onConflict: "user_id,role" },
+      );
+    }
+    return { id: created.user.id };
+  });
+
+export const setUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    if (error) throw new Error("No se pudo cambiar la contraseña");
+    return { ok: true };
+  });
+
+export const deleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    if (data.userId === context.userId) throw new Error("No puedes eliminarte a ti mismo");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error("No se pudo eliminar el usuario");
+    return { ok: true };
+  });
+
+export const getUserPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: rows, error } = await supabaseAdmin
+      .from("user_permissions")
+      .select("module, can_create, can_read, can_update, can_delete")
+      .eq("user_id", data.userId);
+    if (error) throw new Error("No se pudieron cargar permisos");
+    return rows ?? [];
+  });
+
+const permSchema = z.object({
+  module: z.enum(MODULES),
+  can_create: z.boolean(),
+  can_read: z.boolean(),
+  can_update: z.boolean(),
+  can_delete: z.boolean(),
+});
+
+export const saveUserPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid(), permissions: z.array(permSchema) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const rows = data.permissions.map((p) => ({ ...p, user_id: data.userId }));
+    const { error } = await supabaseAdmin
+      .from("user_permissions")
+      .upsert(rows, { onConflict: "user_id,module" });
+    if (error) throw new Error("No se pudieron guardar permisos");
+    return { ok: true };
+  });
