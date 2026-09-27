@@ -245,12 +245,19 @@ function CatalogPage() {
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="p_img">URL de imagen</Label>
+            <Label>Imagen del producto</Label>
+            <ImageDropzone
+              hint="Arrastra una imagen de tu ordenador o haz click"
+              preview={localImage?.dataUrl ?? null}
+              onClear={() => setLocalImage(null)}
+              onFiles={(files) => setLocalImage(files[0] ?? null)}
+            />
             <Input
               id="p_img"
-              placeholder="https://…"
+              placeholder="…o pega una URL de imagen (https://…)"
               value={prod.image_url}
               onChange={(e) => setProd({ ...prod, image_url: e.target.value })}
+              disabled={!!localImage}
             />
           </div>
           <div className="space-y-2 md:col-span-3">
