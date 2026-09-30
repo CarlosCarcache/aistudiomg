@@ -1,18 +1,35 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, Save, Trash2, Users, X } from "lucide-react";
+import {
+  Eye,
+  Loader2,
+  Pencil,
+  Save,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { clientsController } from "@/controllers/clients.controller";
-import type { Client } from "@/models/types";
+import { ordersController } from "@/controllers/orders.controller";
+import type { Client, Order, OrderStatus } from "@/models/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
