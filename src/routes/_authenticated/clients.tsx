@@ -161,6 +161,17 @@ function ClientsPage() {
     }
   };
 
+  const openOrders = (c: Client) => {
+    setOrdersClient(c);
+    setClientOrders([]);
+    setOrdersLoading(true);
+    ordersController
+      .listByClient(c.id)
+      .then(setClientOrders)
+      .catch(() => toast.error("No se pudieron cargar los pedidos"))
+      .finally(() => setOrdersLoading(false));
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
