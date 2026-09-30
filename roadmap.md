@@ -1,1 +1,1 @@
-- [ ] Aplicar permisos CRUD por módulo en páginas y en la base de datos
+- [x] Aplicar permisos CRUD por módulo en páginas y en la base de datos
