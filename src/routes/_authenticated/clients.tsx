@@ -69,6 +69,9 @@ const emptyForm = {
   notes: "",
 };
 
+const orderStatusLabel = (s: OrderStatus) =>
+  s === "nuevo" ? "Nuevo" : s === "en_proceso" ? "En proceso" : "Terminado";
+
 function ClientsPage() {
   const perm = usePermissions("clients");
   const { user } = useAuth();
