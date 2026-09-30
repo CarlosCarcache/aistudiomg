@@ -297,6 +297,15 @@ function ClientsPage() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        onClick={() => openOrders(c)}
+                        aria-label="Ver pedidos"
+                        title="Ver pedidos"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => startEdit(c)}
                         aria-label="Editar"
                       >
