@@ -12,6 +12,16 @@ export const ordersController = {
     return data ?? [];
   },
 
+  async listByClient(clientId: string): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
   async create(input: NewOrder): Promise<Order> {
     const { data, error } = await supabase
       .from("orders")
