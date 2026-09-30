@@ -256,6 +256,7 @@ export type Database = {
           notes: string | null
           price: number | null
           project_id: string | null
+          quantity: number
           status: Database["public"]["Enums"]["order_status"]
           title: string
           updated_at: string
@@ -271,6 +272,7 @@ export type Database = {
           notes?: string | null
           price?: number | null
           project_id?: string | null
+          quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
           updated_at?: string
@@ -286,6 +288,7 @@ export type Database = {
           notes?: string | null
           price?: number | null
           project_id?: string | null
+          quantity?: number
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
           updated_at?: string

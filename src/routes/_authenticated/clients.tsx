@@ -376,7 +376,11 @@ function ClientsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {o.price != null ? o.price : "—"}
+                        {o.price != null
+                          ? `${o.price} × ${o.quantity ?? 1} = ${
+                              Number(o.price) * (o.quantity ?? 1)
+                            }`
+                          : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {o.due_date ?? "—"}

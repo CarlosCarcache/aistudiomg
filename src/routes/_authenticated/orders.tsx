@@ -44,6 +44,12 @@ export const Route = createFileRoute("/_authenticated/orders")({
   }),
 });
 
+const currency = new Intl.NumberFormat("es-NI", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+});
+
 const STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "nuevo", label: "Nuevos" },
   { value: "en_proceso", label: "En proceso" },
@@ -63,6 +69,7 @@ function OrdersPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
 
@@ -104,6 +111,7 @@ function OrdersPage() {
         title: title.trim(),
         description: description.trim() || null,
         price: price ? Number(price) : null,
+        quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
       });
@@ -111,6 +119,7 @@ function OrdersPage() {
       setTitle("");
       setDescription("");
       setPrice("");
+      setQuantity("1");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
@@ -178,7 +187,17 @@ function OrdersPage() {
                 <p className="text-sm text-muted-foreground">{order.description}</p>
               )}
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {order.price != null && <span>Precio: {order.price}</span>}
+                {order.price != null && (
+                  <span>
+                    Precio: {currency.format(Number(order.price))} ×{" "}
+                    {order.quantity ?? 1} ={" "}
+                    <span className="font-medium text-foreground">
+                      {currency.format(
+                        Number(order.price) * (order.quantity ?? 1),
+                      )}
+                    </span>
+                  </span>
+                )}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
               </div>
               <div className="flex items-center gap-2">
@@ -252,7 +271,7 @@ function OrdersPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Precio</Label>
+              <Label htmlFor="price">Precio unitario</Label>
               <Input
                 id="price"
                 type="number"
@@ -260,6 +279,18 @@ function OrdersPage() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Cantidad</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                step="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="1"
               />
             </div>
             <div className="space-y-2">

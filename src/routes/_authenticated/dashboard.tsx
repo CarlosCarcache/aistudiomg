@@ -106,7 +106,10 @@ function Dashboard() {
 
   const delivered = orders.filter((o) => o.status === "terminado");
   const inProgress = orders.filter((o) => o.status === "en_proceso");
-  const sales = delivered.reduce((sum, o) => sum + Number(o.price ?? 0), 0);
+  const sales = delivered.reduce(
+    (sum, o) => sum + Number(o.price ?? 0) * (o.quantity ?? 1),
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
