@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
@@ -45,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/catalog")({
 });
 
 function CatalogPage() {
+  const perm = usePermissions("catalog");
   const { user } = useAuth();
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -79,6 +81,7 @@ function CatalogPage() {
   );
 
   const addCategory = async () => {
+    if (!perm.guard("create")) return;
     if (!catName.trim()) return;
     if (!user) return toast.error("Inicia sesión para crear categorías");
     try {
@@ -95,6 +98,7 @@ function CatalogPage() {
   };
 
   const removeCategory = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await catalogController.removeCategory(id);
       setCategories((c) => c.filter((x) => x.id !== id));
@@ -148,6 +152,7 @@ function CatalogPage() {
   };
 
   const removeProduct = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await catalogController.removeProduct(id);
       setProducts((ps) => ps.filter((p) => p.id !== id));

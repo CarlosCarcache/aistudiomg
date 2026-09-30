@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, Loader2, Trash2 } from "lucide-react";
@@ -53,6 +54,7 @@ const statusLabel = (s: OrderStatus) =>
   s === "nuevo" ? "Nuevo" : s === "en_proceso" ? "En proceso" : "Terminado";
 
 function OrdersPage() {
+  const perm = usePermissions("orders");
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +87,7 @@ function OrdersPage() {
   );
 
   const handleCreate = async (e: React.FormEvent) => {
+    if (!perm.guard("create")) return;
     e.preventDefault();
     if (!title.trim()) {
       toast.error("Escribe un título para el pedido");
@@ -119,6 +122,7 @@ function OrdersPage() {
   };
 
   const handleStatus = async (id: string, next: OrderStatus) => {
+    if (!perm.guard("update")) return;
     const prev = orders;
     setOrders((os) => os.map((o) => (o.id === id ? { ...o, status: next } : o)));
     try {
@@ -130,6 +134,7 @@ function OrdersPage() {
   };
 
   const handleRemove = async (id: string) => {
+    if (!perm.guard("delete")) return;
     const prev = orders;
     setOrders((os) => os.filter((o) => o.id !== id));
     try {

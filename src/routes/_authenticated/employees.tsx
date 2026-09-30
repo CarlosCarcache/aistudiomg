@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BadgeCheck, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
@@ -52,6 +53,7 @@ const emptyForm = {
 };
 
 function EmployeesPage() {
+  const perm = usePermissions("employees");
   const { user } = useAuth();
   const [rows, setRows] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,7 @@ function EmployeesPage() {
   };
 
   const submit = async () => {
+    if (!perm.guard(editingId ? "update" : "create")) return;
     if (!form.first_name.trim()) {
       toast.error("El nombre es obligatorio");
       return;
@@ -125,6 +128,7 @@ function EmployeesPage() {
   };
 
   const remove = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await employeesController.remove(id);
       setRows((r) => r.filter((e) => e.id !== id));

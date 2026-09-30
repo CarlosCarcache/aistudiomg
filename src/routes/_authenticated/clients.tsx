@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Pencil, Save, Trash2, Users, X } from "lucide-react";
@@ -52,6 +53,7 @@ const emptyForm = {
 };
 
 function ClientsPage() {
+  const perm = usePermissions("clients");
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,7 @@ function ClientsPage() {
   };
 
   const submit = async () => {
+    if (!perm.guard(editingId ? "update" : "create")) return;
     if (!form.first_name.trim()) {
       toast.error("El nombre es obligatorio");
       return;
@@ -127,6 +130,7 @@ function ClientsPage() {
   };
 
   const remove = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await clientsController.remove(id);
       setClients((cs) => cs.filter((c) => c.id !== id));
