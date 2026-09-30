@@ -63,6 +63,7 @@ function OrdersPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
 
@@ -104,6 +105,7 @@ function OrdersPage() {
         title: title.trim(),
         description: description.trim() || null,
         price: price ? Number(price) : null,
+        quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
       });
@@ -111,6 +113,7 @@ function OrdersPage() {
       setTitle("");
       setDescription("");
       setPrice("");
+      setQuantity("1");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
