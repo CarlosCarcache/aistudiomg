@@ -525,6 +525,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      has_perm: {
+        Args: { _action: string; _module: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
