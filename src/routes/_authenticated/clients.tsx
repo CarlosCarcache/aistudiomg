@@ -327,6 +327,65 @@ function ClientsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={!!ordersClient}
+        onOpenChange={(open) => !open && setOrdersClient(null)}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Pedidos de {ordersClient?.first_name}{" "}
+              {ordersClient?.last_name ?? ""}
+            </DialogTitle>
+            <DialogDescription>
+              Todos los pedidos que ha realizado este cliente.
+            </DialogDescription>
+          </DialogHeader>
+          {ordersLoading ? (
+            <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando pedidos…
+            </div>
+          ) : clientOrders.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Sin pedidos"
+              description="Este cliente todavía no tiene pedidos registrados."
+            />
+          ) : (
+            <div className="max-h-[50vh] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pedido</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Entrega</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clientOrders.map((o) => (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-medium">{o.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {orderStatusLabel(o.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {o.price != null ? o.price : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {o.due_date ?? "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
