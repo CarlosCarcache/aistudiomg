@@ -77,6 +77,9 @@ function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [ordersClient, setOrdersClient] = useState<Client | null>(null);
+  const [clientOrders, setClientOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     clientsController
