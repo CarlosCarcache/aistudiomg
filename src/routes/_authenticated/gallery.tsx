@@ -1,3 +1,4 @@
+import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Copy, Images, Link2, Loader2, Trash2 } from "lucide-react";
@@ -54,6 +55,7 @@ const ALL = "__all__";
 const NONE = "__none__";
 
 function GalleryPage() {
+  const perm = usePermissions("gallery");
   const { user } = useAuth();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -107,6 +109,7 @@ function GalleryPage() {
   );
 
   const handleFiles = async (files: { file: File; dataUrl: string }[]) => {
+    if (!perm.guard("create")) return;
     if (!user) return toast.error("Inicia sesión para subir imágenes");
     setUploading(true);
     try {
@@ -160,6 +163,7 @@ function GalleryPage() {
   };
 
   const removeImage = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await galleryController.remove(id);
       setImages((p) => p.filter((i) => i.id !== id));
@@ -170,6 +174,7 @@ function GalleryPage() {
   };
 
   const createShare = async () => {
+    if (!perm.guard("create")) return;
     if (!user) return toast.error("Inicia sesión para crear enlaces");
     if (!shareClient) return toast.error("Selecciona un cliente");
     try {
@@ -188,6 +193,7 @@ function GalleryPage() {
   };
 
   const removeShare = async (id: string) => {
+    if (!perm.guard("delete")) return;
     try {
       await galleryController.removeShare(id);
       setShares((s) => s.filter((x) => x.id !== id));
