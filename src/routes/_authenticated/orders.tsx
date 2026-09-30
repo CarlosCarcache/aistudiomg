@@ -181,7 +181,17 @@ function OrdersPage() {
                 <p className="text-sm text-muted-foreground">{order.description}</p>
               )}
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {order.price != null && <span>Precio: {order.price}</span>}
+                {order.price != null && (
+                  <span>
+                    Precio: {currency.format(Number(order.price))} ×{" "}
+                    {order.quantity ?? 1} ={" "}
+                    <span className="font-medium text-foreground">
+                      {currency.format(
+                        Number(order.price) * (order.quantity ?? 1),
+                      )}
+                    </span>
+                  </span>
+                )}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
               </div>
               <div className="flex items-center gap-2">
@@ -255,7 +265,7 @@ function OrdersPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Precio</Label>
+              <Label htmlFor="price">Precio unitario</Label>
               <Input
                 id="price"
                 type="number"
@@ -263,6 +273,18 @@ function OrdersPage() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Cantidad</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                step="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="1"
               />
             </div>
             <div className="space-y-2">
