@@ -44,6 +44,12 @@ export const Route = createFileRoute("/_authenticated/orders")({
   }),
 });
 
+const currency = new Intl.NumberFormat("es-NI", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+});
+
 const STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "nuevo", label: "Nuevos" },
   { value: "en_proceso", label: "En proceso" },
