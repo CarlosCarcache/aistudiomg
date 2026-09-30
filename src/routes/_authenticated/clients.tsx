@@ -1,18 +1,35 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, Save, Trash2, Users, X } from "lucide-react";
+import {
+  Eye,
+  Loader2,
+  Pencil,
+  Save,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { clientsController } from "@/controllers/clients.controller";
-import type { Client } from "@/models/types";
+import { ordersController } from "@/controllers/orders.controller";
+import type { Client, Order, OrderStatus } from "@/models/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -52,6 +69,9 @@ const emptyForm = {
   notes: "",
 };
 
+const orderStatusLabel = (s: OrderStatus) =>
+  s === "nuevo" ? "Nuevo" : s === "en_proceso" ? "En proceso" : "Terminado";
+
 function ClientsPage() {
   const perm = usePermissions("clients");
   const { user } = useAuth();
@@ -60,6 +80,9 @@ function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [ordersClient, setOrdersClient] = useState<Client | null>(null);
+  const [clientOrders, setClientOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     clientsController
@@ -139,6 +162,17 @@ function ClientsPage() {
     } catch {
       toast.error("No se pudo eliminar el cliente");
     }
+  };
+
+  const openOrders = (c: Client) => {
+    setOrdersClient(c);
+    setClientOrders([]);
+    setOrdersLoading(true);
+    ordersController
+      .listByClient(c.id)
+      .then(setClientOrders)
+      .catch(() => toast.error("No se pudieron cargar los pedidos"))
+      .finally(() => setOrdersLoading(false));
   };
 
   return (
@@ -266,6 +300,15 @@ function ClientsPage() {
                       <Button
                         size="icon"
                         variant="ghost"
+                        onClick={() => openOrders(c)}
+                        aria-label="Ver pedidos"
+                        title="Ver pedidos"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => startEdit(c)}
                         aria-label="Editar"
                       >
@@ -287,6 +330,65 @@ function ClientsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog
+        open={!!ordersClient}
+        onOpenChange={(open) => !open && setOrdersClient(null)}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              Pedidos de {ordersClient?.first_name}{" "}
+              {ordersClient?.last_name ?? ""}
+            </DialogTitle>
+            <DialogDescription>
+              Todos los pedidos que ha realizado este cliente.
+            </DialogDescription>
+          </DialogHeader>
+          {ordersLoading ? (
+            <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando pedidos…
+            </div>
+          ) : clientOrders.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Sin pedidos"
+              description="Este cliente todavía no tiene pedidos registrados."
+            />
+          ) : (
+            <div className="max-h-[50vh] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Pedido</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Precio</TableHead>
+                    <TableHead>Entrega</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clientOrders.map((o) => (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-medium">{o.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {orderStatusLabel(o.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {o.price != null ? o.price : "—"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {o.due_date ?? "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
