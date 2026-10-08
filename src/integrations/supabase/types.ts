@@ -253,6 +253,7 @@ export type Database = {
           due_date: string | null
           employee_id: string | null
           id: string
+          image_url: string | null
           notes: string | null
           price: number | null
           project_id: string | null
@@ -269,6 +270,7 @@ export type Database = {
           due_date?: string | null
           employee_id?: string | null
           id?: string
+          image_url?: string | null
           notes?: string | null
           price?: number | null
           project_id?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           due_date?: string | null
           employee_id?: string | null
           id?: string
+          image_url?: string | null
           notes?: string | null
           price?: number | null
           project_id?: string | null
