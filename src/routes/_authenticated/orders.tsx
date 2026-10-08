@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { ordersController } from "@/controllers/orders.controller";
-import type { Order, OrderStatus } from "@/models/types";
+import type { Order, OrderStatus, ProductCategory } from "@/models/types";
+import { catalogController } from "@/controllers/catalog.controller";
+import { CURRENCIES, formatMoney, orderTotal, type CurrencyCode } from "@/lib/money";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,12 +46,6 @@ export const Route = createFileRoute("/_authenticated/orders")({
   }),
 });
 
-const currency = new Intl.NumberFormat("es-NI", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 2,
-});
-
 const STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "nuevo", label: "Nuevos" },
   { value: "en_proceso", label: "En proceso" },
@@ -65,10 +61,13 @@ function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [cur, setCur] = useState<CurrencyCode>("NIO");
+  const [categoryId, setCategoryId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
@@ -79,6 +78,7 @@ function OrdersPage() {
       .then(setOrders)
       .catch(() => toast.error("No se pudieron cargar los pedidos"))
       .finally(() => setLoading(false));
+    catalogController.listCategories().then(setCategories).catch(() => {});
   }, []);
 
   const grouped = useMemo(
@@ -111,6 +111,8 @@ function OrdersPage() {
         title: title.trim(),
         description: description.trim() || null,
         price: price ? Number(price) : null,
+        currency: cur,
+        category_id: categoryId || null,
         quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
@@ -120,6 +122,7 @@ function OrdersPage() {
       setDescription("");
       setPrice("");
       setQuantity("1");
+      setCategoryId("");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
@@ -189,14 +192,15 @@ function OrdersPage() {
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                 {order.price != null && (
                   <span>
-                    Precio: {currency.format(Number(order.price))} ×{" "}
+                    Precio: {formatMoney(Number(order.price), order.currency)} ×{" "}
                     {order.quantity ?? 1} ={" "}
                     <span className="font-medium text-foreground">
-                      {currency.format(
-                        Number(order.price) * (order.quantity ?? 1),
-                      )}
+                      {formatMoney(orderTotal(order.price, order.quantity), order.currency)}
                     </span>
                   </span>
+                )}
+                {order.category_id && (
+                  <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
                 )}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
               </div>
@@ -272,26 +276,40 @@ function OrdersPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="price">Precio unitario</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-              />
+              <div className="flex gap-2">
+                <Select value={cur} onValueChange={(v) => setCur(v as CurrencyCode)}>
+                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input id="price" type="number" step="0.01" value={price}
+                  onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">Cantidad</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1"
-              />
+              <Label htmlFor="quantity">Cantidad de productos</Label>
+              <Input id="quantity" type="number" min="1" step="1" value={quantity}
+                onChange={(e) => setQuantity(e.target.value)} placeholder="1" />
+              <p className="text-xs text-muted-foreground">
+                Total: <span className="font-medium text-foreground">
+                  {formatMoney(orderTotal(price || 0, Number(quantity) || 1), cur)}
+                </span>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Categoría (carpeta del portafolio)</Label>
+              <Select value={categoryId || "none"} onValueChange={(v) => setCategoryId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin categoría</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="due">Fecha de entrega</Label>
