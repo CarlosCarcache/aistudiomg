@@ -247,12 +247,15 @@ export type Database = {
       }
       orders: {
         Row: {
+          category_id: string | null
           client_id: string | null
           created_at: string
+          currency: string
           description: string | null
           due_date: string | null
           employee_id: string | null
           id: string
+          image_url: string | null
           notes: string | null
           price: number | null
           project_id: string | null
@@ -263,12 +266,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           client_id?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           due_date?: string | null
           employee_id?: string | null
           id?: string
+          image_url?: string | null
           notes?: string | null
           price?: number | null
           project_id?: string | null
@@ -279,12 +285,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           client_id?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           due_date?: string | null
           employee_id?: string | null
           id?: string
+          image_url?: string | null
           notes?: string | null
           price?: number | null
           project_id?: string | null
@@ -295,6 +304,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_client_id_fkey"
             columns: ["client_id"]

@@ -1,4 +1,5 @@
 import { usePermissions } from "@/hooks/use-permissions";
+import { formatMoney, orderTotal } from "@/lib/money";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -377,9 +378,10 @@ function ClientsPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {o.price != null
-                          ? `${o.price} × ${o.quantity ?? 1} = ${
-                              Number(o.price) * (o.quantity ?? 1)
-                            }`
+                          ? `${formatMoney(Number(o.price), o.currency)} × ${o.quantity ?? 1} = ${formatMoney(
+                              orderTotal(o.price, o.quantity),
+                              o.currency,
+                            )}`
                           : "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
