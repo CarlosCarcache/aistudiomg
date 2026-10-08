@@ -73,6 +73,9 @@ const emptyForm = {
 const orderStatusLabel = (s: OrderStatus) =>
   s === "nuevo" ? "Nuevo" : s === "en_proceso" ? "En proceso" : "Terminado";
 
+const orderStatusVariant = (s: OrderStatus) =>
+  s === "nuevo" ? "outline" : s === "en_proceso" ? "default" : "secondary";
+
 function ClientsPage() {
   const perm = usePermissions("clients");
   const { user } = useAuth();
