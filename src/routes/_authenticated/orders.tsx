@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { ordersController } from "@/controllers/orders.controller";
-import type { Order, OrderStatus, ProductCategory } from "@/models/types";
+import type { Order, OrderStatus, ProductCategory, Client } from "@/models/types";
+import { clientsController } from "@/controllers/clients.controller";
 import { catalogController } from "@/controllers/catalog.controller";
 import { CURRENCIES, formatMoney, orderTotal, type CurrencyCode } from "@/lib/money";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,6 +63,7 @@ function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
