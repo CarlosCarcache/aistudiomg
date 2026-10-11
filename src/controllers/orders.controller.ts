@@ -43,6 +43,17 @@ export const ordersController = {
     return data;
   },
 
+  async setEmployee(id: string, employeeId: string | null): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ employee_id: employeeId })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async remove(id: string) {
     const { error } = await supabase.from("orders").delete().eq("id", id);
     if (error) throw error;
