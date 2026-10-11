@@ -209,9 +209,7 @@ function OrdersPage() {
                   <span>
                     Cliente:{" "}
                     <span className="font-medium text-foreground">
-                      {clients.find((c) => c.id === order.client_id)
-                        ? [clients.find((c) => c.id === order.client_id)!.first_name, clients.find((c) => c.id === order.client_id)!.last_name].filter(Boolean).join(" ") || "—"
-                        : "—"}
+                      {clientName(order.client_id)}
                     </span>
                   </span>
                 )}
