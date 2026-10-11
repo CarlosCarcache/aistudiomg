@@ -361,6 +361,18 @@ function ClientsPage() {
             />
           ) : (
             <div className="max-h-[50vh] overflow-y-auto">
+              <div className="flex flex-wrap gap-2 px-1 pb-3 text-xs">
+                {(["nuevo", "en_proceso", "terminado"] as OrderStatus[]).map(
+                  (s) => {
+                    const n = clientOrders.filter((o) => o.status === s).length;
+                    return (
+                      <Badge key={s} variant={orderStatusVariant(s)}>
+                        {orderStatusLabel(s)}: {n}
+                      </Badge>
+                    );
+                  },
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -375,7 +387,7 @@ function ClientsPage() {
                     <TableRow key={o.id}>
                       <TableCell className="font-medium">{o.title}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <Badge variant={orderStatusVariant(o.status)}>
                           {orderStatusLabel(o.status)}
                         </Badge>
                       </TableCell>
