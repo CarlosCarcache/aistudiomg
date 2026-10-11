@@ -107,12 +107,6 @@ function OrdersPage() {
     return [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "—";
   };
 
-  const employeeName = (id: string) => {
-    const e = employees.find((em) => em.id === id);
-    if (!e) return "—";
-    return [e.first_name, e.last_name].filter(Boolean).join(" ") || e.email || "—";
-  };
-
   const handleCreate = async (e: React.FormEvent) => {
     if (!perm.guard("create")) return;
     e.preventDefault();
