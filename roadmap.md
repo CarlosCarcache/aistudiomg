@@ -1,1 +1,3 @@
 - [x] Aplicar permisos CRUD por módulo en páginas y en la base de datos
+- [x] Estados de pedidos en el panel de clientes (colores + resumen)
+- [x] Apartado de copias de seguridad con descarga JSON
