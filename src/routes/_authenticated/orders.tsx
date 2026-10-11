@@ -281,6 +281,20 @@ function OrdersPage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select value={clientId || "none"} onValueChange={(v) => setClientId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin cliente</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="price">Precio unitario</Label>
               <div className="flex gap-2">
                 <Select value={cur} onValueChange={(v) => setCur(v as CurrencyCode)}>
