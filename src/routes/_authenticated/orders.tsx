@@ -97,6 +97,12 @@ function OrdersPage() {
     [orders],
   );
 
+  const clientName = (id: string) => {
+    const c = clients.find((cl) => cl.id === id);
+    if (!c) return "—";
+    return [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "—";
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     if (!perm.guard("create")) return;
     e.preventDefault();
