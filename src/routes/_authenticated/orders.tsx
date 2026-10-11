@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { ordersController } from "@/controllers/orders.controller";
-import type { Order, OrderStatus, ProductCategory, Client } from "@/models/types";
+import type { Order, OrderStatus, ProductCategory, Client, Employee } from "@/models/types";
 import { clientsController } from "@/controllers/clients.controller";
+import { employeesController } from "@/controllers/employees.controller";
 import { catalogController } from "@/controllers/catalog.controller";
 import { CURRENCIES, formatMoney, orderTotal, type CurrencyCode } from "@/lib/money";
 import { useAuth } from "@/hooks/use-auth";
@@ -64,6 +65,7 @@ function OrdersPage() {
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -71,6 +73,7 @@ function OrdersPage() {
   const [cur, setCur] = useState<CurrencyCode>("NIO");
   const [categoryId, setCategoryId] = useState("");
   const [clientId, setClientId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
@@ -83,6 +86,7 @@ function OrdersPage() {
       .finally(() => setLoading(false));
     catalogController.listCategories().then(setCategories).catch(() => {});
     clientsController.list().then(setClients).catch(() => {});
+    employeesController.list().then(setEmployees).catch(() => {});
   }, []);
 
   const grouped = useMemo(
@@ -101,6 +105,12 @@ function OrdersPage() {
     const c = clients.find((cl) => cl.id === id);
     if (!c) return "—";
     return [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "—";
+  };
+
+  const employeeName = (id: string) => {
+    const e = employees.find((em) => em.id === id);
+    if (!e) return "—";
+    return [e.first_name, e.last_name].filter(Boolean).join(" ") || e.email || "—";
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -124,6 +134,7 @@ function OrdersPage() {
         currency: cur,
         category_id: categoryId || null,
         client_id: clientId || null,
+        employee_id: employeeId || null,
         quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
@@ -135,6 +146,7 @@ function OrdersPage() {
       setQuantity("1");
       setCategoryId("");
       setClientId("");
+      setEmployeeId("");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
@@ -216,6 +228,14 @@ function OrdersPage() {
                     Cliente:{" "}
                     <span className="font-medium text-foreground">
                       {clientName(order.client_id)}
+                    </span>
+                  </span>
+                )}
+                {order.employee_id && (
+                  <span>
+                    Empleado:{" "}
+                    <span className="font-medium text-foreground">
+                      {employeeName(order.employee_id)}
                     </span>
                   </span>
                 )}
@@ -305,6 +325,22 @@ function OrdersPage() {
                       {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Empleado que lo realiza</Label>
+              <Select value={employeeId || "none"} onValueChange={(v) => setEmployeeId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin empleado</SelectItem>
+                  {employees
+                    .filter((e) => e.active)
+                    .map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {[e.first_name, e.last_name].filter(Boolean).join(" ") || e.email || e.id}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
