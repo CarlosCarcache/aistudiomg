@@ -205,6 +205,16 @@ function OrdersPage() {
                     </span>
                   </span>
                 )}
+                {order.client_id && (
+                  <span>
+                    Cliente:{" "}
+                    <span className="font-medium text-foreground">
+                      {clients.find((c) => c.id === order.client_id)
+                        ? [clients.find((c) => c.id === order.client_id)!.first_name, clients.find((c) => c.id === order.client_id)!.last_name].filter(Boolean).join(" ") || "—"
+                        : "—"}
+                    </span>
+                  </span>
+                )}
                 {order.category_id && (
                   <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
                 )}
