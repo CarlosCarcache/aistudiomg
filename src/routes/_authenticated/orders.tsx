@@ -117,6 +117,7 @@ function OrdersPage() {
         price: price ? Number(price) : null,
         currency: cur,
         category_id: categoryId || null,
+        client_id: clientId || null,
         quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
@@ -127,6 +128,7 @@ function OrdersPage() {
       setPrice("");
       setQuantity("1");
       setCategoryId("");
+      setClientId("");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
