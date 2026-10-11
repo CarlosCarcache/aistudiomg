@@ -244,18 +244,30 @@ function OrdersPage() {
                     </span>
                   </span>
                 )}
-                {order.employee_id && (
-                  <span>
-                    Empleado:{" "}
-                    <span className="font-medium text-foreground">
-                      {employeeName(order.employee_id)}
-                    </span>
-                  </span>
-                )}
                 {order.category_id && (
                   <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
                 )}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={order.employee_id || "none"}
+                  onValueChange={(v) => handleEmployee(order.id, v === "none" ? null : v)}
+                >
+                  <SelectTrigger className="h-8 flex-1" aria-label="Empleado asignado">
+                    <SelectValue placeholder="Asignar empleado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin empleado</SelectItem>
+                    {employees
+                      .filter((e) => e.active)
+                      .map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {[e.first_name, e.last_name].filter(Boolean).join(" ") || e.email || e.id}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center gap-2">
                 <Select
