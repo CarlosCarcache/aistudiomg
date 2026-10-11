@@ -70,6 +70,7 @@ function OrdersPage() {
   const [price, setPrice] = useState("");
   const [cur, setCur] = useState<CurrencyCode>("NIO");
   const [categoryId, setCategoryId] = useState("");
+  const [clientId, setClientId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
@@ -81,6 +82,7 @@ function OrdersPage() {
       .catch(() => toast.error("No se pudieron cargar los pedidos"))
       .finally(() => setLoading(false));
     catalogController.listCategories().then(setCategories).catch(() => {});
+    clientsController.list().then(setClients).catch(() => {});
   }, []);
 
   const grouped = useMemo(
