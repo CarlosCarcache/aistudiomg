@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
 import { ordersController } from "@/controllers/orders.controller";
-import type { Order, OrderStatus, ProductCategory } from "@/models/types";
+import type { Order, OrderStatus, ProductCategory, Client } from "@/models/types";
+import { clientsController } from "@/controllers/clients.controller";
 import { catalogController } from "@/controllers/catalog.controller";
 import { CURRENCIES, formatMoney, orderTotal, type CurrencyCode } from "@/lib/money";
 import { useAuth } from "@/hooks/use-auth";
@@ -62,12 +63,14 @@ function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [cur, setCur] = useState<CurrencyCode>("NIO");
   const [categoryId, setCategoryId] = useState("");
+  const [clientId, setClientId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
@@ -79,6 +82,7 @@ function OrdersPage() {
       .catch(() => toast.error("No se pudieron cargar los pedidos"))
       .finally(() => setLoading(false));
     catalogController.listCategories().then(setCategories).catch(() => {});
+    clientsController.list().then(setClients).catch(() => {});
   }, []);
 
   const grouped = useMemo(
@@ -92,6 +96,12 @@ function OrdersPage() {
       ),
     [orders],
   );
+
+  const clientName = (id: string) => {
+    const c = clients.find((cl) => cl.id === id);
+    if (!c) return "—";
+    return [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "—";
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     if (!perm.guard("create")) return;
@@ -113,6 +123,7 @@ function OrdersPage() {
         price: price ? Number(price) : null,
         currency: cur,
         category_id: categoryId || null,
+        client_id: clientId || null,
         quantity: Math.max(1, Number(quantity) || 1),
         due_date: dueDate || null,
         status,
@@ -123,6 +134,7 @@ function OrdersPage() {
       setPrice("");
       setQuantity("1");
       setCategoryId("");
+      setClientId("");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
@@ -199,6 +211,14 @@ function OrdersPage() {
                     </span>
                   </span>
                 )}
+                {order.client_id && (
+                  <span>
+                    Cliente:{" "}
+                    <span className="font-medium text-foreground">
+                      {clientName(order.client_id)}
+                    </span>
+                  </span>
+                )}
                 {order.category_id && (
                   <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
                 )}
@@ -269,6 +289,20 @@ function OrdersPage() {
                   {STATUSES.map((s) => (
                     <SelectItem key={s.value} value={s.value}>
                       {statusLabel(s.value)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select value={clientId || "none"} onValueChange={(v) => setClientId(v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin cliente</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id}
                     </SelectItem>
                   ))}
                 </SelectContent>
