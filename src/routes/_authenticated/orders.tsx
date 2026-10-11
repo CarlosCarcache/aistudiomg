@@ -169,6 +169,19 @@ function OrdersPage() {
     }
   };
 
+  const handleEmployee = async (id: string, next: string | null) => {
+    if (!perm.guard("update")) return;
+    const prev = orders;
+    setOrders((os) => os.map((o) => (o.id === id ? { ...o, employee_id: next } : o)));
+    try {
+      await ordersController.setEmployee(id, next);
+      toast.success(next ? "Empleado asignado" : "Empleado liberado");
+    } catch {
+      setOrders(prev);
+      toast.error("No se pudo asignar el empleado");
+    }
+  };
+
   const handleRemove = async (id: string) => {
     if (!perm.guard("delete")) return;
     const prev = orders;
