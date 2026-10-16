@@ -38,6 +38,7 @@ function HalftonePage() {
   const [solid, setSolid] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
+  const [bgBusy, setBgBusy] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
