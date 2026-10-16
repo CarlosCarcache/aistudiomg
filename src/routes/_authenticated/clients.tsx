@@ -48,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/clients")({
       {
         name: "description",
         content:
-          "Registro de clientes con contacto, método de pago y notas para el estudio de diseño.",
+          "Registro de clientes con contacto y notas para el estudio de diseño.",
       },
       { property: "og:title", content: "Clientes | AI Studio MG" },
       {
@@ -66,7 +66,6 @@ const emptyForm = {
   last_name: "",
   email: "",
   phone: "",
-  payment_method: "",
   notes: "",
 };
 
@@ -111,7 +110,6 @@ function ClientsPage() {
       last_name: c.last_name ?? "",
       email: c.email ?? "",
       phone: c.phone ?? "",
-      payment_method: c.payment_method ?? "",
       notes: c.notes ?? "",
     });
   };
@@ -133,7 +131,6 @@ function ClientsPage() {
         last_name: form.last_name.trim() || null,
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
-        payment_method: form.payment_method.trim() || null,
         notes: form.notes.trim() || null,
       };
       if (editingId) {
@@ -183,7 +180,7 @@ function ClientsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Clientes"
-        description="Alta, edición y borrado de clientes con contacto y método de pago."
+        description="Alta, edición y borrado de clientes con sus datos de contacto."
       />
 
       <Card>
@@ -224,15 +221,6 @@ function ClientsPage() {
               id="phone"
               value={form.phone}
               onChange={(e) => set("phone", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="payment_method">Método de pago</Label>
-            <Input
-              id="payment_method"
-              placeholder="Efectivo, transferencia…"
-              value={form.payment_method}
-              onChange={(e) => set("payment_method", e.target.value)}
             />
           </div>
           <div className="space-y-2 md:col-span-3">
@@ -281,7 +269,6 @@ function ClientsPage() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Teléfono</TableHead>
-                  <TableHead>Pago</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -296,9 +283,6 @@ function ClientsPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {c.phone ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.payment_method ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

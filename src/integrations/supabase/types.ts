@@ -257,6 +257,7 @@ export type Database = {
           id: string
           image_url: string | null
           notes: string | null
+          payment_method: string | null
           price: number | null
           project_id: string | null
           quantity: number
@@ -276,6 +277,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           notes?: string | null
+          payment_method?: string | null
           price?: number | null
           project_id?: string | null
           quantity?: number
@@ -295,6 +297,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           notes?: string | null
+          payment_method?: string | null
           price?: number | null
           project_id?: string | null
           quantity?: number
