@@ -136,13 +136,7 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        {!collapsed && (
-          <p className="px-2 py-2 text-xs text-muted-foreground">
-            Login desactivado temporalmente
-          </p>
-        )}
-      </SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border" />
     </Sidebar>
   );
 }
