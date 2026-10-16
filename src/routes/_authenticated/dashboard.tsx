@@ -102,10 +102,12 @@ function Dashboard() {
 
   const delivered = orders.filter((o) => o.status === "terminado");
   const inProgress = orders.filter((o) => o.status === "en_proceso");
-  const sales = delivered.filter((o) => (o.currency ?? "USD") === "USD").reduce(
-    (sum, o) => sum + Number(o.price ?? 0) * (o.quantity ?? 1),
-    0,
-  );
+  const salesUsd = delivered
+    .filter((o) => (o.currency ?? "USD") === "USD")
+    .reduce((sum, o) => sum + orderTotal(o), 0);
+  const salesNio = delivered
+    .filter((o) => (o.currency ?? "USD") === "NIO")
+    .reduce((sum, o) => sum + orderTotal(o), 0);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
