@@ -46,11 +46,7 @@ const quick = [
   { to: "/chat", icon: MessageSquare, title: "Chat IA", desc: "Pide mejoras específicas" },
 ];
 
-const currency = new Intl.NumberFormat("es-NI", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
+import { formatMoney, orderTotal } from "@/lib/money";
 
 interface KpiProps {
   icon: typeof Users;
