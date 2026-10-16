@@ -146,7 +146,7 @@ function Dashboard() {
           <KpiCard
             icon={DollarSign}
             label="Ventas"
-            value={currency.format(sales)}
+            value={`${formatMoney(salesUsd, "USD")} · ${formatMoney(salesNio, "NIO")}`}
             hint="Pedidos terminados"
             to="/orders"
             loading={loading}
