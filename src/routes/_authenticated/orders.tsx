@@ -75,6 +75,7 @@ function OrdersPage() {
   const [clientId, setClientId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [quantity, setQuantity] = useState("1");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState<OrderStatus>("nuevo");
 
@@ -130,6 +131,7 @@ function OrdersPage() {
         client_id: clientId || null,
         employee_id: employeeId || null,
         quantity: Math.max(1, Number(quantity) || 1),
+        payment_method: paymentMethod.trim() || null,
         due_date: dueDate || null,
         status,
       });
@@ -141,6 +143,7 @@ function OrdersPage() {
       setCategoryId("");
       setClientId("");
       setEmployeeId("");
+      setPaymentMethod("");
       setDueDate("");
       setStatus("nuevo");
       toast.success("Pedido creado");
@@ -241,6 +244,7 @@ function OrdersPage() {
                 {order.category_id && (
                   <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
                 )}
+                {order.payment_method && <span>Pago: {order.payment_method}</span>}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
               </div>
               <div className="flex items-center gap-2">
@@ -397,6 +401,19 @@ function OrdersPage() {
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment_method">Método de pago</Label>
+              <Select value={paymentMethod || "none"} onValueChange={(v) => setPaymentMethod(v === "none" ? "" : v)}>
+                <SelectTrigger id="payment_method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin especificar</SelectItem>
+                  <SelectItem value="Efectivo">Efectivo</SelectItem>
+                  <SelectItem value="Transferencia">Transferencia</SelectItem>
+                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
+                  <SelectItem value="Depósito">Depósito</SelectItem>
                 </SelectContent>
               </Select>
             </div>
