@@ -1,6 +1,8 @@
 // Controller: proyectos (CRUD sobre la tabla `projects`).
 import { supabase } from "@/integrations/supabase/client";
-import type { NewProject, Project } from "@/models/types";
+import type { Project } from "@/models/types";
+
+export type ProjectInput = { title: string; description?: string | null; thumbnail_url?: string | null };
 
 export const projectsController = {
   async list(): Promise<Project[]> {
@@ -12,10 +14,23 @@ export const projectsController = {
     return data ?? [];
   },
 
-  async create(input: NewProject): Promise<Project> {
+  async create(input: ProjectInput): Promise<Project> {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) throw new Error("Debes iniciar sesión");
     const { data, error } = await supabase
       .from("projects")
-      .insert(input)
+      .insert({ ...input, user_id: u.user.id })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, input: ProjectInput): Promise<Project> {
+    const { data, error } = await supabase
+      .from("projects")
+      .update(input)
+      .eq("id", id)
       .select()
       .single();
     if (error) throw error;
