@@ -70,6 +70,7 @@ function GalleryPage() {
     category_id: NONE,
     client_id: NONE,
     is_portfolio: false,
+    price: "",
   });
   const [shareClient, setShareClient] = useState<string>("");
 
@@ -124,13 +125,14 @@ function GalleryPage() {
             category_id: form.category_id === NONE ? null : form.category_id,
             client_id: form.client_id === NONE ? null : form.client_id,
             is_portfolio: form.is_portfolio,
+            price: form.price ? Number(form.price) : null,
           }),
         );
       }
       setImages((prev) => [...created, ...prev]);
       const newUrls = await galleryController.resolveMany(created);
       setUrls((prev) => ({ ...prev, ...newUrls }));
-      setForm((f) => ({ ...f, title: "" }));
+      setForm((f) => ({ ...f, title: "", price: "" }));
       toast.success(`${created.length} imagen(es) subida(s)`);
     } catch {
       toast.error("No se pudo subir la imagen");
@@ -222,6 +224,18 @@ function GalleryPage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Taza personalizada"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="g-price">Precio por imagen (C$)</Label>
+              <Input
+                id="g-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                placeholder="0.00"
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -417,6 +431,31 @@ function GalleryPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={`pr-${img.id}`} className="text-xs">
+                    Precio C$
+                  </Label>
+                  <Input
+                    id={`pr-${img.id}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="h-8 text-xs"
+                    defaultValue={img.price ?? ""}
+                    placeholder="0.00"
+                    onBlur={async (e) => {
+                      const v = e.target.value ? Number(e.target.value) : null;
+                      if (v === img.price) return;
+                      try {
+                        const updated = await galleryController.update(img.id, { price: v });
+                        setImages((prev) => prev.map((i) => (i.id === img.id ? updated : i)));
+                        toast.success("Precio actualizado");
+                      } catch {
+                        toast.error("No se pudo guardar el precio");
+                      }
+                    }}
+                  />
+                </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={img.is_portfolio}

@@ -118,4 +118,19 @@ export const galleryController = {
     if (error) throw new Error("No se pudo cargar la galería compartida");
     return data ?? [];
   },
+
+  // Enlace seguro: el cliente envía un pedido con las imágenes seleccionadas.
+  async submitSharedOrder(
+    token: string,
+    input: { name: string; phone: string; notes: string; imageIds: string[] },
+  ): Promise<void> {
+    const { error } = await supabase.rpc("create_order_from_share", {
+      _token: token,
+      _client_name: input.name,
+      _phone: input.phone,
+      _notes: input.notes,
+      _image_ids: input.imageIds,
+    });
+    if (error) throw new Error("No se pudo enviar el pedido");
+  },
 };
