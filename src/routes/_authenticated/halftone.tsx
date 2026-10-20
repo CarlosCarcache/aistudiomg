@@ -287,8 +287,9 @@ function HalftonePage() {
           {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           Aplicar IA
         </Button>
-        <Button variant="secondary" size="sm" className="w-full" onClick={() => handleAi("Quita el fondo, deja sujeto sobre transparente.")} disabled={aiBusy}>
-          Quitar fondo
+        <Button variant="secondary" size="sm" className="w-full" onClick={handleRemoveBg} disabled={aiBusy || bgBusy}>
+          {bgBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Quitar fondo (transparente)
         </Button>
         <Button variant="secondary" size="sm" className="w-full" onClick={() => handleAi("Convierte en arte plano vectorial, colores sólidos, líneas limpias.")} disabled={aiBusy}>
           Vectorizar AI
