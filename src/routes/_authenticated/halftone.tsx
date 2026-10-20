@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { aiImage, downloadDataUrl, loadImage } from "@/lib/image-utils";
-import { removeBackground } from "@imgly/background-removal";
+import { removeBackgroundClean } from "@/lib/remove-bg";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/halftone")({
