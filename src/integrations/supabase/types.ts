@@ -167,6 +167,7 @@ export type Database = {
           id: string
           image_url: string
           is_portfolio: boolean
+          price: number | null
           title: string
           updated_at: string
           user_id: string
@@ -178,6 +179,7 @@ export type Database = {
           id?: string
           image_url: string
           is_portfolio?: boolean
+          price?: number | null
           title?: string
           updated_at?: string
           user_id: string
@@ -189,6 +191,7 @@ export type Database = {
           id?: string
           image_url?: string
           is_portfolio?: boolean
+          price?: number | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -527,6 +530,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_order_from_share: {
+        Args: {
+          _client_name: string
+          _image_ids: string[]
+          _notes: string
+          _phone: string
+          _token: string
+        }
+        Returns: string
+      }
       get_shared_gallery: {
         Args: { _token: string }
         Returns: {
@@ -536,6 +549,7 @@ export type Database = {
           id: string
           image_url: string
           is_portfolio: boolean
+          price: number | null
           title: string
           updated_at: string
           user_id: string

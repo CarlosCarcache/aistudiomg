@@ -15,6 +15,13 @@
       "when": 1792116475989,
       "tag": "0001_orders_payment_method",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792467363520,
+      "tag": "0002_gallery_price_and_shared_order",
+      "breakpoints": true
     }
   ]
 }
