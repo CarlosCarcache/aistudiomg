@@ -211,7 +211,7 @@ function HalftonePage() {
           const r = (solid ? step / 2 : (step / 2) * Math.sqrt(darkness)).toFixed(2);
           parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`);
         } else {
-          const len = (solid ? step : step * darkness).toFixed(2);
+          const len = solid ? step : step * darkness;
           const lw = Math.max(1, solid ? step * 0.4 : step * 0.4 * darkness).toFixed(2);
           parts.push(`<line x1="${(-len / 2).toFixed(2)}" y1="0" x2="${(len / 2).toFixed(2)}" y2="0" stroke="${fill}" stroke-width="${lw}" stroke-linecap="round" transform="translate(${cx} ${cy}) rotate(${angle})"/>`);
         }
