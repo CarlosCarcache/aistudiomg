@@ -161,16 +161,89 @@ function HalftonePage() {
     setSolid(false);
   }
 
+  async function downloadSvg() {
+    if (!src) return;
+    const img = await loadImage(src);
+    const maxW = 900;
+    const scale = Math.min(1, maxW / img.width);
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+
+    const tmp = document.createElement("canvas");
+    tmp.width = w;
+    tmp.height = h;
+    const tctx = tmp.getContext("2d")!;
+    tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) grayscale(1)`;
+    tctx.drawImage(img, 0, 0, w, h);
+    const data = tctx.getImageData(0, 0, w, h).data;
+
+    let colorData: Uint8ClampedArray | null = null;
+    if (colorMode === "color") {
+      const ctmp = document.createElement("canvas");
+      ctmp.width = w;
+      ctmp.height = h;
+      const cctx = ctmp.getContext("2d")!;
+      cctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
+      cctx.drawImage(img, 0, 0, w, h);
+      colorData = cctx.getImageData(0, 0, w, h).data;
+    }
+
+    const step = Math.max(3, dotSize);
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const diag = Math.ceil(Math.hypot(w, h));
+    const parts: string[] = [];
+    if (bgEnabled) parts.push(`<rect width="${w}" height="${h}" fill="${bgColor}"/>`);
+
+    for (let yy = -diag; yy < diag; yy += step) {
+      for (let xx = -diag; xx < diag; xx += step) {
+        const sx = Math.round(xx * cos - yy * sin + w / 2);
+        const sy = Math.round(xx * sin + yy * cos + h / 2);
+        if (sx < 0 || sx >= w || sy < 0 || sy >= h) continue;
+        const i = (sy * w + sx) * 4;
+        const rawDark = 1 - data[i] / 255;
+        const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
+        if (darkness <= 0.02) continue;
+        const cx = (xx * cos - yy * sin + w / 2).toFixed(2);
+        const cy = (xx * sin + yy * cos + h / 2).toFixed(2);
+        const fill = colorData ? `rgb(${colorData[i]},${colorData[i + 1]},${colorData[i + 2]})` : knockoutColor;
+        if (shape === "dot") {
+          const r = (solid ? step / 2 : (step / 2) * Math.sqrt(darkness)).toFixed(2);
+          parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`);
+        } else {
+          const len = (solid ? step : step * darkness).toFixed(2);
+          const lw = Math.max(1, solid ? step * 0.4 : step * 0.4 * darkness).toFixed(2);
+          parts.push(`<line x1="${(-len / 2).toFixed(2)}" y1="0" x2="${(len / 2).toFixed(2)}" y2="0" stroke="${fill}" stroke-width="${lw}" stroke-linecap="round" transform="translate(${cx} ${cy}) rotate(${angle})"/>`);
+        }
+      }
+    }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${parts.join("")}</svg>`;
+    downloadDataUrl("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), `halftone-${dpi}dpi-${Date.now()}.svg`);
+  }
+
   function download(format: "png" | "svg" | "jpg") {
     if (!canvasRef.current) return;
     if (format === "svg") {
-      const c = canvasRef.current;
-      const dataUrl = c.toDataURL("image/png");
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${c.width}" height="${c.height}"><image href="${dataUrl}" width="${c.width}" height="${c.height}"/></svg>`;
-      downloadDataUrl("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), `halftone-${dpi}dpi-${Date.now()}.svg`);
+      downloadSvg().catch((e) => toast.error(e instanceof Error ? e.message : "Error exportando SVG"));
     } else {
       const mime = format === "jpg" ? "image/jpeg" : "image/png";
       downloadDataUrl(canvasRef.current.toDataURL(mime, 0.95), `halftone-${dpi}dpi-${Date.now()}.${format}`);
+    }
+  }
+
+  async function handleRemoveBg() {
+    if (!src) return;
+    setBgBusy(true);
+    const t = toast.loading("Quitando fondo (puede tardar la primera vez)...");
+    try {
+      const out = await removeBackgroundClean(src);
+      setSrc(out);
+      toast.success("Fondo quitado, bordes limpios", { id: t });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error quitando fondo", { id: t });
+    } finally {
+      setBgBusy(false);
     }
   }
 
