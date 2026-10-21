@@ -40,6 +40,7 @@ type BackgroundMode = "transparent" | "white" | "black" | "color";
 type WorkspaceMode = "compare" | "shirt" | "print";
 type ShirtSize = "XS" | "S" | "M" | "L" | "XL" | "2XL" | "3XL" | "4XL";
 type PrintDesign = { id: number; x: number; y: number; width: number };
+type GarmentMask = { dots: Uint8ClampedArray; background: Uint8Array };
 
 const DPI_OPTS = [300, 400, 500, 600, 700, 800];
 const SHIRT_COLORS = ["#f4f4f5", "#171717", "#ef4444", "#2563eb", "#16a34a", "#facc15"];
@@ -79,6 +80,8 @@ function HalftonePage() {
   const [tab, setTab] = useState<Tab>("preview");
   const [knockoutColor, setKnockoutColor] = useState("#000000");
   const [bgColor, setBgColor] = useState("#ffffff");
+  const [garmentHalftone, setGarmentHalftone] = useState(true);
+  const [garmentTolerance, setGarmentTolerance] = useState(90);
   const [removeBg, setRemoveBg] = useState(false);
   const [backgroundMode, setBackgroundMode] = useState<BackgroundMode>("white");
   const [targetColor, setTargetColor] = useState("#ffffff");
@@ -118,6 +121,9 @@ function HalftonePage() {
     tab,
     knockoutColor,
     bgColor,
+    garmentHalftone,
+    garmentTolerance,
+    shirtColor,
     previewBackground,
     customPreviewBackground,
     removeBg,
@@ -153,8 +159,8 @@ function HalftonePage() {
     if (!src || !canvasRef.current) return;
     const img = await loadImage(src);
     const c = canvasRef.current;
-    const maxW = 900;
-    const scale = Math.min(1, maxW / img.width);
+    const maxW = 1500;
+    const scale = Math.min(1, maxW / Math.max(img.width, img.height));
     c.width = img.width * scale;
     c.height = img.height * scale;
     const ctx = c.getContext("2d")!;
@@ -184,16 +190,47 @@ function HalftonePage() {
     tctx.drawImage(img, 0, 0, c.width, c.height);
     const imageData = tctx.getImageData(0, 0, c.width, c.height);
     const data = imageData.data;
-    let keyData: Uint8ClampedArray | null = null;
+    const keyCanvas = document.createElement("canvas");
+    keyCanvas.width = c.width;
+    keyCanvas.height = c.height;
+    const keyContext = keyCanvas.getContext("2d")!;
+    keyContext.drawImage(img, 0, 0, c.width, c.height);
+    const keyData = keyContext.getImageData(0, 0, c.width, c.height).data;
     if (removeBg) {
-      const keyCanvas = document.createElement("canvas");
-      keyCanvas.width = c.width;
-      keyCanvas.height = c.height;
-      const keyContext = keyCanvas.getContext("2d")!;
-      keyContext.drawImage(img, 0, 0, c.width, c.height);
-      keyData = keyContext.getImageData(0, 0, c.width, c.height).data;
       applyColorKey(data, keyData, backgroundMode, targetColor, tolerance, protectSubject);
       tctx.putImageData(imageData, 0, 0);
+    }
+
+    const garmentMask = garmentHalftone
+      ? createGarmentMask(keyData, c.width, c.height, shirtColor, garmentTolerance)
+      : null;
+
+    if (garmentMask) {
+      const artCanvas = document.createElement("canvas");
+      artCanvas.width = c.width;
+      artCanvas.height = c.height;
+      const artContext = artCanvas.getContext("2d")!;
+      artContext.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) saturate(${saturation})`;
+      artContext.drawImage(img, 0, 0, c.width, c.height);
+      const artImageData = artContext.getImageData(0, 0, c.width, c.height);
+      if (removeBg) {
+        applyColorKey(
+          artImageData.data,
+          keyData,
+          backgroundMode,
+          targetColor,
+          tolerance,
+          protectSubject,
+        );
+      }
+      for (let i = 0; i < garmentMask.dots.length; i++) {
+        artImageData.data[i * 4 + 3] = Math.round(
+          artImageData.data[i * 4 + 3] *
+            (1 - Math.max(garmentMask.dots[i] / 255, garmentMask.background[i] / 255)),
+        );
+      }
+      artContext.putImageData(artImageData, 0, 0);
+      ctx.drawImage(artCanvas, 0, 0);
     }
 
     // Color original (opcional) para modo color
@@ -208,7 +245,7 @@ function HalftonePage() {
       const colorImageData = cctx.getImageData(0, 0, c.width, c.height);
       colorData = colorImageData.data;
       applyGamma(colorData, gamma);
-      if (keyData)
+      if (removeBg)
         applyColorKey(colorData, keyData, backgroundMode, targetColor, tolerance, protectSubject);
     }
 
@@ -230,18 +267,25 @@ function HalftonePage() {
         if (sx < 0 || sx >= c.width || sy < 0 || sy >= c.height) continue;
         const i = (sy * c.width + sx) * 4;
         if (data[i + 3] === 0) continue;
-        ctx.globalAlpha = data[i + 3] / 255;
+        const garmentMatch = garmentMask ? garmentMask.dots[sy * c.width + sx] / 255 : 1;
+        if (garmentMask && garmentMatch <= 0.01) continue;
+        ctx.globalAlpha = (data[i + 3] / 255) * garmentMatch;
         const correctedLum = 255 * Math.pow(data[i] / 255, 1 / gamma);
-        const rawDark = (darkGarment ? correctedLum / 255 : 1 - correctedLum / 255) * intensity;
+        const rawDark = garmentMask
+          ? (darkGarment ? 1 - correctedLum / 255 : correctedLum / 255) * intensity
+          : (darkGarment ? correctedLum / 255 : 1 - correctedLum / 255) * intensity;
         // Solid: umbral duro (sin degradados), tamaño completo
         const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
-        if (darkness <= 0.02) continue;
+        if (darkness <= 0.02) {
+          ctx.globalAlpha = 1;
+          continue;
+        }
 
         const cx = xx * cos - yy * sin + c.width / 2;
         const cy = xx * sin + yy * cos + c.height / 2;
 
         // Color del punto
-        if (colorData) {
+        if (colorData && !garmentMask) {
           ctx.fillStyle = `rgb(${colorData[i]}, ${colorData[i + 1]}, ${colorData[i + 2]})`;
           ctx.strokeStyle = ctx.fillStyle;
         } else {
@@ -286,6 +330,8 @@ function HalftonePage() {
   function reset() {
     setKnockoutColor("#000000");
     setBgColor("#ffffff");
+    setGarmentHalftone(true);
+    setGarmentTolerance(90);
     setRemoveBg(false);
     setBackgroundMode("white");
     setTargetColor("#ffffff");
@@ -325,8 +371,22 @@ function HalftonePage() {
     setPrintZoom(100);
   }
 
+  function selectGarmentColor(color: string) {
+    setShirtColor(color);
+    const { r, g, b } = hexToRgb(color);
+    setDarkGarment((r * 299 + g * 587 + b * 114) / 1000 < 128);
+  }
+
   async function downloadSvg() {
     if (!src) return;
+    if (garmentHalftone && canvasRef.current) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${printWidth}cm" height="${printHeight}cm" viewBox="0 0 ${canvasRef.current.width} ${canvasRef.current.height}"><image href="${canvasRef.current.toDataURL("image/png")}" width="100%" height="100%"/></svg>`;
+      downloadDataUrl(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+        `halftone-${dpi}dpi-${Date.now()}.svg`,
+      );
+      return;
+    }
     const img = await loadImage(src);
     const maxW = 900;
     const scale = Math.min(1, maxW / img.width);
@@ -923,14 +983,14 @@ function HalftonePage() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Zoom</span>
               <Slider
-                className="w-24"
+                className="w-32"
                 value={[zoom]}
                 min={50}
-                max={150}
+                max={1500}
                 step={10}
                 onValueChange={(v) => setZoom(v[0])}
               />
-              <span className="w-10 text-xs tabular-nums">{zoom}%</span>
+              <span className="w-14 text-xs tabular-nums">{zoom}%</span>
             </div>
           )}
           {workspaceMode === "print" && (
@@ -951,11 +1011,13 @@ function HalftonePage() {
 
         {workspaceMode === "compare" && (
           <div className="grid min-h-[68vh] flex-1 lg:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="flex min-h-[60vh] items-center justify-center overflow-auto bg-neutral-950 p-5">
+            <div className="flex h-[68vh] min-h-[60vh] items-start justify-start overflow-auto bg-neutral-950 p-5">
               <div
-                className="relative max-h-[68vh] w-full overflow-hidden"
+                className="relative shrink-0 overflow-hidden"
                 style={{
-                  aspectRatio: "3 / 2",
+                  width: `${zoom}%`,
+                  aspectRatio: String(1 / aspectRatio),
+                  margin: zoom <= 100 ? "auto" : undefined,
                   background:
                     previewBackground === "transparent"
                       ? "repeating-conic-gradient(#ddd 0% 25%, white 0% 50%) 50% / 16px 16px"
@@ -1046,6 +1108,45 @@ function HalftonePage() {
                   onValueChange={(v) => setComparePosition(v[0])}
                 />
               </Section>
+              <Section title="Semitono según la prenda">
+                <p className="text-xs text-muted-foreground">Tono que se sustituye por la tela</p>
+                <div className="flex flex-wrap gap-2">
+                  {SHIRT_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      aria-label={`Usar tono de prenda ${color}`}
+                      onClick={() => selectGarmentColor(color)}
+                      className={`h-8 w-8 rounded-full border-2 ${shirtColor === color ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <input
+                    aria-label="Elegir color de prenda"
+                    type="color"
+                    value={shirtColor}
+                    onChange={(event) => selectGarmentColor(event.target.value)}
+                    className="h-8 w-8 cursor-pointer rounded-full"
+                  />
+                </div>
+                <ToggleRow
+                  label="Aplicar semitono solo a tonos de la prenda"
+                  checked={garmentHalftone}
+                  onCheckedChange={setGarmentHalftone}
+                />
+                <SliderRow label="Rango de tonos similares" value={garmentTolerance}>
+                  <Slider
+                    value={[garmentTolerance]}
+                    min={0}
+                    max={255}
+                    step={1}
+                    onValueChange={(values) => setGarmentTolerance(values[0])}
+                  />
+                </SliderRow>
+                <p className="text-[11px] text-muted-foreground">
+                  Las áreas parecidas al color de la prenda se vuelven transparentes y reciben la
+                  trama; el resto de la ilustración conserva su color.
+                </p>
+              </Section>
             </aside>
           </div>
         )}
@@ -1073,7 +1174,7 @@ function HalftonePage() {
                     <button
                       key={color}
                       aria-label={`Camiseta ${color}`}
-                      onClick={() => setShirtColor(color)}
+                      onClick={() => selectGarmentColor(color)}
                       className={`h-8 w-8 rounded-full border-2 ${shirtColor === color ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
                       style={{ backgroundColor: color }}
                     />
@@ -1082,7 +1183,7 @@ function HalftonePage() {
                     aria-label="Color personalizado de camiseta"
                     type="color"
                     value={shirtColor}
-                    onChange={(e) => setShirtColor(e.target.value)}
+                    onChange={(e) => selectGarmentColor(e.target.value)}
                     className="h-8 w-8 cursor-pointer rounded-full"
                   />
                 </div>
@@ -1414,6 +1515,68 @@ function applyColorKey(
       data[i + 3] = 0;
     }
   }
+}
+
+function createGarmentMask(
+  source: Uint8ClampedArray,
+  width: number,
+  height: number,
+  color: string,
+  tolerance: number,
+): GarmentMask {
+  const { r, g, b } = hexToRgb(color);
+  const pixelCount = width * height;
+  const edgeBackground = new Uint8Array(pixelCount);
+  const queue = new Int32Array(pixelCount);
+  let head = 0;
+  let tail = 0;
+  const isMatch = (pixel: number) => {
+    const offset = pixel * 4;
+    if (source[offset + 3] === 0) return false;
+    return (
+      Math.hypot(source[offset] - r, source[offset + 1] - g, source[offset + 2] - b) <= tolerance
+    );
+  };
+  const addEdgePixel = (pixel: number) => {
+    if (edgeBackground[pixel] || !isMatch(pixel)) return;
+    edgeBackground[pixel] = 1;
+    queue[tail++] = pixel;
+  };
+
+  for (let x = 0; x < width; x++) {
+    addEdgePixel(x);
+    addEdgePixel((height - 1) * width + x);
+  }
+  for (let y = 1; y < height - 1; y++) {
+    addEdgePixel(y * width);
+    addEdgePixel(y * width + width - 1);
+  }
+
+  while (head < tail) {
+    const pixel = queue[head++];
+    const x = pixel % width;
+    if (x > 0) addEdgePixel(pixel - 1);
+    if (x + 1 < width) addEdgePixel(pixel + 1);
+    if (pixel >= width) addEdgePixel(pixel - width);
+    if (pixel + width < pixelCount) addEdgePixel(pixel + width);
+  }
+
+  const dots = new Uint8ClampedArray(pixelCount);
+  const featherStart = tolerance * 0.7;
+  for (let pixel = 0; pixel < pixelCount; pixel++) {
+    if (edgeBackground[pixel]) continue;
+    const offset = pixel * 4;
+    if (source[offset + 3] === 0) continue;
+    const distance = Math.hypot(source[offset] - r, source[offset + 1] - g, source[offset + 2] - b);
+    if (tolerance === 0) {
+      dots[pixel] = distance === 0 ? 255 : 0;
+    } else if (distance <= featherStart) {
+      dots[pixel] = 255;
+    } else if (distance < tolerance) {
+      dots[pixel] = Math.round(255 * (1 - (distance - featherStart) / (tolerance - featherStart)));
+    }
+  }
+  return { dots, background: edgeBackground };
 }
 
 function NumberField({
