@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/models/types";
 
-export type ProjectInput = { title: string; description?: string | null; thumbnail_url?: string | null };
+export type ProjectInput = { title: string; description?: string | null; thumbnail_url?: string | null; category_id?: string | null };
 
 export const projectsController = {
   async list(): Promise<Project[]> {
