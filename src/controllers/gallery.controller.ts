@@ -126,7 +126,7 @@ export const galleryController = {
     input: { name: string; phone: string; notes: string; imageIds: string[] },
   ): Promise<void> {
     input = sharedOrderSchema.parse(input);
-    const { error } = await supabase.rpc("create_order_from_share", {
+    const { error } = await supabase.rpc("create_shared_gallery_order", {
       _token: token,
       _client_name: input.name,
       _phone: input.phone,
