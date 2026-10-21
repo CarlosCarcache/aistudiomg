@@ -1,5 +1,6 @@
 // Controller: galería de imágenes (privada, por cliente y portafolio público).
 import { supabase } from "@/integrations/supabase/client";
+import { sharedOrderSchema } from "@/lib/shared-order";
 import type {
   GalleryImage,
   GalleryShare,
@@ -124,7 +125,8 @@ export const galleryController = {
     token: string,
     input: { name: string; phone: string; notes: string; imageIds: string[] },
   ): Promise<void> {
-    const { error } = await supabase.rpc("create_order_from_share", {
+    input = sharedOrderSchema.parse(input);
+    const { error } = await supabase.rpc("create_shared_gallery_order", {
       _token: token,
       _client_name: input.name,
       _phone: input.phone,

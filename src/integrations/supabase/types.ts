@@ -264,6 +264,7 @@ export type Database = {
           price: number | null
           project_id: string | null
           quantity: number
+          selected_images: Json | null
           status: Database["public"]["Enums"]["order_status"]
           title: string
           updated_at: string
@@ -284,6 +285,7 @@ export type Database = {
           price?: number | null
           project_id?: string | null
           quantity?: number
+          selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
           updated_at?: string
@@ -304,6 +306,7 @@ export type Database = {
           price?: number | null
           project_id?: string | null
           quantity?: number
+          selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
           updated_at?: string
@@ -440,6 +443,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          category_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -449,6 +453,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -458,6 +463,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -466,7 +472,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {
@@ -531,6 +545,16 @@ export type Database = {
     }
     Functions: {
       create_order_from_share: {
+        Args: {
+          _client_name: string
+          _image_ids: string[]
+          _notes: string
+          _phone: string
+          _token: string
+        }
+        Returns: string
+      }
+      create_shared_gallery_order: {
         Args: {
           _client_name: string
           _image_ids: string[]
