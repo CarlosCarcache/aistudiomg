@@ -554,6 +554,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_shared_gallery_order: {
+        Args: {
+          _client_name: string
+          _image_ids: string[]
+          _notes: string
+          _phone: string
+          _token: string
+        }
+        Returns: string
+      }
       get_shared_gallery: {
         Args: { _token: string }
         Returns: {
