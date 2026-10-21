@@ -21,6 +21,7 @@ export type Order = Database["public"]["Tables"]["orders"]["Row"];
 export type NewClient = Database["public"]["Tables"]["clients"]["Insert"];
 export type NewEmployee = Database["public"]["Tables"]["employees"]["Insert"];
 export type NewOrder = Database["public"]["Tables"]["orders"]["Insert"];
+export type UpdateOrder = Database["public"]["Tables"]["orders"]["Update"];
 
 export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];
 export type UpdateEmployee = Database["public"]["Tables"]["employees"]["Update"];

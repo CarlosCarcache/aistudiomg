@@ -1,7 +1,7 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Loader2, Trash2 } from "lucide-react";
+import { ClipboardList, Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -68,9 +68,11 @@ function OrdersPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [sharedUrls, setSharedUrls] = useState<Record<string, string>>({});
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [notes, setNotes] = useState("");
   const [price, setPrice] = useState("");
   const [cur, setCur] = useState<CurrencyCode>("NIO");
   const [categoryId, setCategoryId] = useState("");
@@ -114,50 +116,99 @@ function OrdersPage() {
     return [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "—";
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    if (!perm.guard("create")) return;
+  const resetForm = () => {
+    setEditingOrder(null);
+    setTitle("");
+    setDescription("");
+    setNotes("");
+    setPrice("");
+    setCur("NIO");
+    setQuantity("1");
+    setCategoryId("");
+    setClientId("");
+    setEmployeeId("");
+    setPaymentMethod("");
+    setDueDate("");
+    setStatus("nuevo");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!perm.guard(editingOrder ? "update" : "create")) return;
     if (!title.trim()) {
       toast.error("Escribe un título para el pedido");
       return;
     }
     if (!user) {
-      toast.error("Inicia sesión para registrar pedidos");
+      toast.error("Inicia sesión para gestionar pedidos");
       return;
     }
     setSaving(true);
     try {
-      const created = await ordersController.create({
-        user_id: user.id,
-        title: title.trim(),
-        description: description.trim() || null,
-        price: price ? Number(price) : null,
-        currency: cur,
-        category_id: categoryId || null,
-        client_id: clientId || null,
-        employee_id: employeeId || null,
-        quantity: Math.max(1, Number(quantity) || 1),
-        payment_method: paymentMethod.trim() || null,
-        due_date: dueDate || null,
-        status,
-      });
-      setOrders((prev) => [created, ...prev]);
-      setTitle("");
-      setDescription("");
-      setPrice("");
-      setQuantity("1");
-      setCategoryId("");
-      setClientId("");
-      setEmployeeId("");
-      setPaymentMethod("");
-      setDueDate("");
-      setStatus("nuevo");
-      toast.success("Pedido creado");
+      if (editingOrder) {
+        const updated = await ordersController.update(editingOrder.id, {
+          title: title.trim(),
+          description: description.trim() || null,
+          notes: notes.trim() || null,
+          ...(Array.isArray(editingOrder.selected_images)
+            ? {}
+            : {
+                price: price ? Number(price) : null,
+                currency: cur,
+                quantity: Math.max(1, Number(quantity) || 1),
+              }),
+          category_id: categoryId || null,
+          client_id: clientId || null,
+          employee_id: employeeId || null,
+          payment_method: paymentMethod.trim() || null,
+          due_date: dueDate || null,
+          status,
+        });
+        setOrders((prev) => prev.map((order) => (order.id === updated.id ? updated : order)));
+        toast.success("Pedido actualizado");
+      } else {
+        const created = await ordersController.create({
+          user_id: user.id,
+          title: title.trim(),
+          description: description.trim() || null,
+          notes: notes.trim() || null,
+          price: price ? Number(price) : null,
+          currency: cur,
+          category_id: categoryId || null,
+          client_id: clientId || null,
+          employee_id: employeeId || null,
+          quantity: Math.max(1, Number(quantity) || 1),
+          payment_method: paymentMethod.trim() || null,
+          due_date: dueDate || null,
+          status,
+        });
+        setOrders((prev) => [created, ...prev]);
+        toast.success("Pedido creado");
+      }
+      resetForm();
     } catch {
-      toast.error("No se pudo crear el pedido");
+      toast.error(editingOrder ? "No se pudo actualizar el pedido" : "No se pudo crear el pedido");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (order: Order) => {
+    if (!perm.guard("update")) return;
+    setEditingOrder(order);
+    setTitle(order.title);
+    setDescription(order.description ?? "");
+    setNotes(order.notes ?? "");
+    setPrice(order.price == null ? "" : String(order.price));
+    setCur(order.currency as CurrencyCode);
+    setCategoryId(order.category_id ?? "");
+    setClientId(order.client_id ?? "");
+    setEmployeeId(order.employee_id ?? "");
+    setQuantity(String(order.quantity ?? 1));
+    setPaymentMethod(order.payment_method ?? "");
+    setDueDate(order.due_date ?? "");
+    setStatus(order.status);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleStatus = async (id: string, next: OrderStatus) => {
@@ -298,6 +349,15 @@ function OrdersPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
+                  aria-label="Editar pedido"
+                  onClick={() => handleEdit(order)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
                   aria-label="Eliminar pedido"
                   onClick={() => handleRemove(order.id)}
                 >
@@ -320,10 +380,12 @@ function OrdersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nuevo pedido</CardTitle>
+          <CardTitle className="text-base">
+            {editingOrder ? "Editar pedido" : "Nuevo pedido"}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="title">Título</Label>
               <Input
@@ -381,7 +443,11 @@ function OrdersPage() {
             <div className="space-y-2">
               <Label htmlFor="price">Precio unitario</Label>
               <div className="flex gap-2">
-                <Select value={cur} onValueChange={(v) => setCur(v as CurrencyCode)}>
+                <Select
+                  value={cur}
+                  onValueChange={(v) => setCur(v as CurrencyCode)}
+                  disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))}
+                >
                   <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CURRENCIES.map((c) => (
@@ -390,13 +456,20 @@ function OrdersPage() {
                   </SelectContent>
                 </Select>
                 <Input id="price" type="number" step="0.01" value={price}
-                  onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+                  onChange={(e) => setPrice(e.target.value)} placeholder="0.00"
+                  disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="quantity">Cantidad de productos</Label>
               <Input id="quantity" type="number" min="1" step="1" value={quantity}
-                onChange={(e) => setQuantity(e.target.value)} placeholder="1" />
+                onChange={(e) => setQuantity(e.target.value)} placeholder="1"
+                disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))} />
+              {editingOrder && Array.isArray(editingOrder.selected_images) && (
+                <p className="text-xs text-muted-foreground">
+                  El precio de este pedido se conserva según las imágenes seleccionadas.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Total: <span className="font-medium text-foreground">
                   {formatMoney(orderTotal(price || 0, Number(quantity) || 1), cur)}
@@ -446,11 +519,27 @@ function OrdersPage() {
                 placeholder="Detalles del pedido, medidas, colores..."
               />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="notes">Notas</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Notas adicionales del pedido..."
+              />
+            </div>
             <div className="md:col-span-2">
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Crear pedido
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={saving}>
+                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {editingOrder ? "Guardar cambios" : "Crear pedido"}
+                </Button>
+                {editingOrder && (
+                  <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>
+                    Cancelar
+                  </Button>
+                )}
+              </div>
             </div>
           </form>
         </CardContent>

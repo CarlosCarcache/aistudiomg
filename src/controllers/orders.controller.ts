@@ -1,6 +1,6 @@
 // Controller: pedidos (CRUD sobre la tabla `orders`).
 import { supabase } from "@/integrations/supabase/client";
-import type { NewOrder, Order, OrderStatus } from "@/models/types";
+import type { NewOrder, Order, OrderStatus, UpdateOrder } from "@/models/types";
 
 export const ordersController = {
   async list(): Promise<Order[]> {
@@ -26,6 +26,17 @@ export const ordersController = {
     const { data, error } = await supabase
       .from("orders")
       .insert(input)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(id: string, input: UpdateOrder): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update(input)
+      .eq("id", id)
       .select()
       .single();
     if (error) throw error;
