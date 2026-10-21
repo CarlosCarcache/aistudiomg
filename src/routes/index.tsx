@@ -15,6 +15,14 @@ import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "AI Studio MG | Estudio de diseño" },
+    { name: "description", content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG." },
+    { property: "og:title", content: "AI Studio MG | Estudio de diseño" },
+    { property: "og:description", content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   beforeLoad: () => {
     throw redirect({ to: "/dashboard" });
   },
