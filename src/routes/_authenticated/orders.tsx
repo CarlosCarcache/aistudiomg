@@ -10,6 +10,7 @@ import type { Order, OrderStatus, ProductCategory, Client, Employee } from "@/mo
 import { clientsController } from "@/controllers/clients.controller";
 import { employeesController } from "@/controllers/employees.controller";
 import { catalogController } from "@/controllers/catalog.controller";
+import { galleryController } from "@/controllers/gallery.controller";
 import { CURRENCIES, formatMoney, orderTotal, type CurrencyCode } from "@/lib/money";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ function OrdersPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [sharedUrls, setSharedUrls] = useState<Record<string, string>>({});
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -82,7 +84,11 @@ function OrdersPage() {
   useEffect(() => {
     ordersController
       .list()
-      .then(setOrders)
+      .then(async (rows) => {
+        setOrders(rows);
+        const paths = rows.flatMap((row) => Array.isArray(row.selected_images) ? row.selected_images.flatMap((item) => item && typeof item === "object" && !Array.isArray(item) && typeof item.image_url === "string" ? [item.image_url] : []) : []);
+        setSharedUrls(Object.fromEntries(await Promise.all([...new Set(paths)].map(async (path) => [path, await galleryController.resolveUrl(path)]))));
+      })
       .catch(() => toast.error("No se pudieron cargar los pedidos"))
       .finally(() => setLoading(false));
     catalogController.listCategories().then(setCategories).catch(() => {});
@@ -220,6 +226,11 @@ function OrdersPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {Array.isArray(order.selected_images) && <div className="space-y-2">{order.selected_images.map((item, index) => {
+                if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+                return <div key={index} className="flex items-center gap-3">{typeof item.image_url === "string" && sharedUrls[item.image_url] && <img src={sharedUrls[item.image_url]} alt={String(item.title ?? "Imagen")} className="h-14 w-14 rounded object-cover" />}<span className="min-w-0 flex-1 text-sm">{String(item.title ?? "Imagen")}</span><span className="text-sm font-medium">{formatMoney(Number(item.price ?? 0), order.currency)}</span></div>;
+              })}</div>}
+              {order.notes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{order.notes}</p>}
               {order.description && (
                 <p className="text-sm text-muted-foreground">{order.description}</p>
               )}
