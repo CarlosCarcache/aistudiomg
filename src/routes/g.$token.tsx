@@ -1,5 +1,8 @@
 // Ruta pública: galería compartida por enlace seguro (solo lectura + pedido).
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { getSharedGallery } from "@/lib/shared-gallery.functions";
+import { sharedOrderSchema, sharedImageTotal } from "@/lib/shared-order";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Download, Images, Loader2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +44,7 @@ export const Route = createFileRoute("/g/$token")({
 const fmt = (n: number) => `C$${n.toFixed(2)}`;
 
 function PublicGalleryPage() {
+  const loadGallery = useServerFn(getSharedGallery);
   const { token } = Route.useParams();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -52,11 +56,10 @@ function PublicGalleryPage() {
   const [form, setForm] = useState({ name: "", phone: "", notes: "" });
 
   useEffect(() => {
-    galleryController
-      .listShared(token)
-      .then(async (imgs) => {
-        setImages(imgs);
-        setUrls(await galleryController.resolveMany(imgs));
+    loadGallery({ data: { token } })
+      .then((result) => {
+        setImages(result.images);
+        setUrls(result.urls);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -66,7 +69,7 @@ function PublicGalleryPage() {
     () => images.filter((i) => selected.has(i.id)),
     [images, selected],
   );
-  const total = selectedImages.reduce((sum, i) => sum + (i.price ?? 0), 0);
+  const total = sharedImageTotal(selectedImages);
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -77,8 +80,9 @@ function PublicGalleryPage() {
     });
 
   const submit = async () => {
-    if (!form.name.trim()) return toast.error("Escribe tu nombre");
-    if (selected.size === 0) return toast.error("Selecciona al menos una imagen");
+    if (sending) return;
+    const validated = sharedOrderSchema.safeParse({ ...form, imageIds: [...selected] });
+    if (!validated.success) return toast.error(validated.error.issues[0]?.message ?? "Revisa tus datos");
     setSending(true);
     try {
       await galleryController.submitSharedOrder(token, {
@@ -107,12 +111,10 @@ function PublicGalleryPage() {
             Enlace seguro · selecciona imágenes para pedir
           </p>
         </div>
-        {selected.size > 0 && (
-          <Button onClick={() => setOpen(true)}>
+          <Button onClick={() => setOpen(true)} disabled={selected.size === 0}>
             <ShoppingCart className="h-4 w-4" />
             Solicitar pedido ({selected.size})
           </Button>
-        )}
       </header>
       <main className="mx-auto max-w-5xl space-y-6 p-6">
         {loading ? (
@@ -139,11 +141,12 @@ function PublicGalleryPage() {
                     isSel ? "border-primary ring-2 ring-primary/40" : "border-border"
                   }`}
                 >
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => toggle(img.id)}
-                    className="relative block w-full"
+                    className="relative block h-auto w-full rounded-none p-0"
                     aria-label={`Seleccionar ${img.title}`}
+                    aria-pressed={isSel}
                   >
                     {urls[img.id] ? (
                       <img
@@ -160,13 +163,11 @@ function PublicGalleryPage() {
                         <Check className="h-4 w-4" />
                       </span>
                     )}
-                  </button>
+                  </Button>
                   <figcaption className="flex items-center justify-between gap-2 p-3 text-sm">
                     <span className="truncate">{img.title}</span>
                     <span className="flex items-center gap-1">
-                      {img.price != null && (
-                        <span className="font-medium">{fmt(img.price)}</span>
-                      )}
+                      <span className="font-medium">{fmt(img.price ?? 0)}</span>
                       {urls[img.id] && (
                         <Button asChild size="icon" variant="ghost">
                           <a
@@ -197,10 +198,11 @@ function PublicGalleryPage() {
               Revisa tus imágenes seleccionadas y completa tus datos.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form id="shared-order-form" onSubmit={(event) => { event.preventDefault(); void submit(); }} className="space-y-3">
             <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
               {selectedImages.map((img) => (
                 <li key={img.id} className="flex justify-between gap-2">
+                   {urls[img.id] && <img src={urls[img.id]} alt={img.title} className="h-12 w-12 shrink-0 rounded object-cover" />}
                   <span className="truncate">{img.title}</span>
                   <span>{fmt(img.price ?? 0)}</span>
                 </li>
@@ -213,6 +215,7 @@ function PublicGalleryPage() {
               <Label htmlFor="po-name">Tu nombre</Label>
               <Input
                 id="po-name"
+                required maxLength={100}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Nombre y apellido"
@@ -222,6 +225,7 @@ function PublicGalleryPage() {
               <Label htmlFor="po-phone">Teléfono (opcional)</Label>
               <Input
                 id="po-phone"
+                type="tel" maxLength={40}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="8888-8888"
@@ -231,14 +235,15 @@ function PublicGalleryPage() {
               <Label htmlFor="po-notes">Notas (opcional)</Label>
               <Textarea
                 id="po-notes"
+                maxLength={1000}
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder="Cantidades, tamaños, detalles…"
               />
             </div>
-          </div>
+          </form>
           <DialogFooter>
-            <Button onClick={submit} disabled={sending}>
+            <Button type="submit" form="shared-order-form" disabled={sending}>
               {sending && <Loader2 className="h-4 w-4 animate-spin" />}
               Enviar pedido
             </Button>
