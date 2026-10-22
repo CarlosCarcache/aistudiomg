@@ -25,7 +25,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageDropzone } from "@/components/image-dropzone";
-import { aiImage, downloadDataUrl, loadImage } from "@/lib/image-utils";
+import {
+  aiImage,
+  canvasToDpiBlob,
+  downloadBlob,
+  downloadDataUrl,
+  loadImage,
+} from "@/lib/image-utils";
 import { removeBackgroundClean } from "@/lib/remove-bg";
 import { PageHeader } from "@/views/PageHeader";
 
@@ -42,7 +48,7 @@ type ShirtSize = "XS" | "S" | "M" | "L" | "XL" | "2XL" | "3XL" | "4XL";
 type PrintDesign = { id: number; x: number; y: number; width: number };
 type GarmentMask = { dots: Uint8ClampedArray; background: Uint8Array };
 
-const DPI_OPTS = [300, 400, 500, 600, 700, 800];
+const DPI_OPTS = [200, 300, 400, 500, 600, 700, 800];
 const SHIRT_COLORS = ["#f4f4f5", "#171717", "#ef4444", "#2563eb", "#16a34a", "#facc15"];
 const SHIRT_SIZES: ShirtSize[] = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"];
 const SHIRT_CHEST_WIDTH: Record<ShirtSize, number> = {
@@ -172,21 +178,11 @@ function HalftonePage() {
       return;
     }
 
-    // Fill BG
-    const outputBackground = previewBackground === "transparent" ? null : previewBackground;
-    if (outputBackground) {
-      ctx.fillStyle = outputBackground;
-      ctx.fillRect(0, 0, c.width, c.height);
-    } else {
-      ctx.clearRect(0, 0, c.width, c.height);
-    }
-
-    // Luminance (siempre en gris) para calcular el peso del punto
     const tmp = document.createElement("canvas");
     tmp.width = c.width;
     tmp.height = c.height;
     const tctx = tmp.getContext("2d")!;
-    tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) grayscale(1)`;
+    tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
     tctx.drawImage(img, 0, 0, c.width, c.height);
     const imageData = tctx.getImageData(0, 0, c.width, c.height);
     const data = imageData.data;
@@ -196,14 +192,34 @@ function HalftonePage() {
     const keyContext = keyCanvas.getContext("2d")!;
     keyContext.drawImage(img, 0, 0, c.width, c.height);
     const keyData = keyContext.getImageData(0, 0, c.width, c.height).data;
-    if (removeBg) {
-      applyColorKey(data, keyData, backgroundMode, targetColor, tolerance, protectSubject);
-      tctx.putImageData(imageData, 0, 0);
-    }
-
     const garmentMask = garmentHalftone
       ? createGarmentMask(keyData, c.width, c.height, shirtColor, garmentTolerance)
       : null;
+    const preserveGarmentColor =
+      removeBg &&
+      garmentMask !== null &&
+      colorsMatch(getBackgroundKey(backgroundMode, targetColor), shirtColor, garmentTolerance);
+    if (removeBg) {
+      applySelectedBackground(
+        data,
+        keyData,
+        backgroundMode,
+        targetColor,
+        tolerance,
+        protectSubject,
+        preserveGarmentColor ? garmentMask : null,
+      );
+      tctx.putImageData(imageData, 0, 0);
+    }
+
+    const outputBackground =
+      preserveGarmentColor || previewBackground === "transparent" ? null : previewBackground;
+    if (outputBackground) {
+      ctx.fillStyle = outputBackground;
+      ctx.fillRect(0, 0, c.width, c.height);
+    } else {
+      ctx.clearRect(0, 0, c.width, c.height);
+    }
 
     if (garmentMask) {
       const artCanvas = document.createElement("canvas");
@@ -214,13 +230,14 @@ function HalftonePage() {
       artContext.drawImage(img, 0, 0, c.width, c.height);
       const artImageData = artContext.getImageData(0, 0, c.width, c.height);
       if (removeBg) {
-        applyColorKey(
+        applySelectedBackground(
           artImageData.data,
           keyData,
           backgroundMode,
           targetColor,
           tolerance,
           protectSubject,
+          preserveGarmentColor ? garmentMask : null,
         );
       }
       for (let i = 0; i < garmentMask.dots.length; i++) {
@@ -246,7 +263,15 @@ function HalftonePage() {
       colorData = colorImageData.data;
       applyGamma(colorData, gamma);
       if (removeBg)
-        applyColorKey(colorData, keyData, backgroundMode, targetColor, tolerance, protectSubject);
+        applySelectedBackground(
+          colorData,
+          keyData,
+          backgroundMode,
+          targetColor,
+          tolerance,
+          protectSubject,
+          preserveGarmentColor ? garmentMask : null,
+        );
     }
 
     const step = Math.max(3, dotSize);
@@ -270,10 +295,7 @@ function HalftonePage() {
         const garmentMatch = garmentMask ? garmentMask.dots[sy * c.width + sx] / 255 : 1;
         if (garmentMask && garmentMatch <= 0.01) continue;
         ctx.globalAlpha = (data[i + 3] / 255) * garmentMatch;
-        const correctedLum = 255 * Math.pow(data[i] / 255, 1 / gamma);
-        const rawDark = garmentMask
-          ? (darkGarment ? 1 - correctedLum / 255 : correctedLum / 255) * intensity
-          : (darkGarment ? correctedLum / 255 : 1 - correctedLum / 255) * intensity;
+        const rawDark = getShadowInkAmount(data, i, gamma, intensity);
         // Solid: umbral duro (sin degradados), tamaño completo
         const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
         if (darkness <= 0.02) {
@@ -380,7 +402,24 @@ function HalftonePage() {
   async function downloadSvg() {
     if (!src) return;
     if (garmentHalftone && canvasRef.current) {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${printWidth}cm" height="${printHeight}cm" viewBox="0 0 ${canvasRef.current.width} ${canvasRef.current.height}"><image href="${canvasRef.current.toDataURL("image/png")}" width="100%" height="100%"/></svg>`;
+      const outputWidth = Math.max(1, Math.round((printWidth / 2.54) * dpi));
+      const outputHeight = Math.max(1, Math.round((printHeight / 2.54) * dpi));
+      if (
+        outputWidth > 16_384 ||
+        outputHeight > 16_384 ||
+        outputWidth * outputHeight > 100_000_000
+      ) {
+        throw new Error(
+          "El tamaño de exportación excede el límite; reduce las dimensiones o los DPI",
+        );
+      }
+      const output = document.createElement("canvas");
+      output.width = outputWidth;
+      output.height = outputHeight;
+      const context = output.getContext("2d");
+      if (!context) throw new Error("No se pudo preparar la imagen para exportar");
+      context.drawImage(canvasRef.current, 0, 0, outputWidth, outputHeight);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${printWidth}cm" height="${printHeight}cm" viewBox="0 0 ${outputWidth} ${outputHeight}"><image href="${output.toDataURL("image/png")}" width="100%" height="100%"/></svg>`;
       downloadDataUrl(
         `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
         `halftone-${dpi}dpi-${Date.now()}.svg`,
@@ -397,19 +436,37 @@ function HalftonePage() {
     tmp.width = w;
     tmp.height = h;
     const tctx = tmp.getContext("2d")!;
-    tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast}) saturate(${saturation}) grayscale(1)`;
+    tctx.filter = `brightness(${1 + brightness / 100}) contrast(${contrast})`;
     tctx.drawImage(img, 0, 0, w, h);
     const imageData = tctx.getImageData(0, 0, w, h);
     const data = imageData.data;
     let keyData: Uint8ClampedArray | null = null;
-    if (removeBg) {
+    if (removeBg || garmentHalftone) {
       const keyCanvas = document.createElement("canvas");
       keyCanvas.width = w;
       keyCanvas.height = h;
       const keyContext = keyCanvas.getContext("2d")!;
       keyContext.drawImage(img, 0, 0, w, h);
       keyData = keyContext.getImageData(0, 0, w, h).data;
-      applyColorKey(data, keyData, backgroundMode, targetColor, tolerance, protectSubject);
+    }
+    const garmentMask =
+      garmentHalftone && keyData
+        ? createGarmentMask(keyData, w, h, shirtColor, garmentTolerance)
+        : null;
+    const preserveGarmentColor =
+      removeBg &&
+      garmentMask !== null &&
+      colorsMatch(getBackgroundKey(backgroundMode, targetColor), shirtColor, garmentTolerance);
+    if (removeBg && keyData) {
+      applySelectedBackground(
+        data,
+        keyData,
+        backgroundMode,
+        targetColor,
+        tolerance,
+        protectSubject,
+        preserveGarmentColor ? garmentMask : null,
+      );
     }
 
     let colorData: Uint8ClampedArray | null = null;
@@ -422,8 +479,17 @@ function HalftonePage() {
       cctx.drawImage(img, 0, 0, w, h);
       colorData = cctx.getImageData(0, 0, w, h).data;
       applyGamma(colorData, gamma);
-      if (keyData)
-        applyColorKey(colorData, keyData, backgroundMode, targetColor, tolerance, protectSubject);
+      if (removeBg && keyData) {
+        applySelectedBackground(
+          colorData,
+          keyData,
+          backgroundMode,
+          targetColor,
+          tolerance,
+          protectSubject,
+          preserveGarmentColor ? garmentMask : null,
+        );
+      }
     }
 
     const step = Math.max(3, dotSize);
@@ -432,7 +498,7 @@ function HalftonePage() {
       sin = Math.sin(rad);
     const diag = Math.ceil(Math.hypot(w, h));
     const parts: string[] = [];
-    if (previewBackground !== "transparent") {
+    if (!preserveGarmentColor && previewBackground !== "transparent") {
       parts.push(`<rect width="${w}" height="${h}" fill="${previewBackground}"/>`);
     }
 
@@ -443,18 +509,20 @@ function HalftonePage() {
         if (sx < 0 || sx >= w || sy < 0 || sy >= h) continue;
         const i = (sy * w + sx) * 4;
         if (data[i + 3] === 0) continue;
-        const correctedLum = 255 * Math.pow(data[i] / 255, 1 / gamma);
-        const rawDark = (darkGarment ? correctedLum / 255 : 1 - correctedLum / 255) * intensity;
+        const garmentMatch = garmentMask ? garmentMask.dots[sy * w + sx] / 255 : 1;
+        if (garmentMask && garmentMatch <= 0.01) continue;
+        const rawDark = getShadowInkAmount(data, i, gamma, intensity);
         const darkness = solid ? (rawDark > 0.5 ? 1 : 0) : rawDark;
         if (darkness <= 0.02) continue;
         const cx = (xx * cos - yy * sin + w / 2).toFixed(2);
         const cy = (xx * sin + yy * cos + h / 2).toFixed(2);
-        const fill = colorData
-          ? `rgb(${colorData[i]},${colorData[i + 1]},${colorData[i + 2]})`
-          : darkGarment
-            ? "#ffffff"
-            : knockoutColor;
-        const opacity = (data[i + 3] / 255).toFixed(3);
+        const fill =
+          colorData && !garmentMask
+            ? `rgb(${colorData[i]},${colorData[i + 1]},${colorData[i + 2]})`
+            : darkGarment
+              ? "#ffffff"
+              : knockoutColor;
+        const opacity = ((data[i + 3] / 255) * garmentMatch).toFixed(3);
         if (shape === "dot") {
           const r = (
             solid
@@ -489,7 +557,7 @@ function HalftonePage() {
     );
   }
 
-  function download(format: "png" | "svg" | "jpg") {
+  async function download(format: "png" | "svg" | "jpg") {
     if (!canvasRef.current) return;
     if (format === "svg") {
       downloadSvg().catch((e) =>
@@ -518,7 +586,12 @@ function HalftonePage() {
         context.fillRect(0, 0, outputWidth, outputHeight);
       }
       context.drawImage(canvasRef.current, 0, 0, outputWidth, outputHeight);
-      downloadDataUrl(output.toDataURL(mime, 0.95), `halftone-${dpi}dpi-${Date.now()}.${format}`);
+      try {
+        const blob = await canvasToDpiBlob(output, mime, dpi, 0.95);
+        downloadBlob(blob, `halftone-${dpi}dpi-${Date.now()}.${format}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Error exportando la imagen");
+      }
     }
   }
 
@@ -612,7 +685,8 @@ function HalftonePage() {
           drawHeight,
         );
       }
-      downloadDataUrl(output.toDataURL("image/png"), `pliego-${sheet.label}-${dpi}dpi.png`);
+      const blob = await canvasToDpiBlob(output, "image/png", dpi);
+      downloadBlob(blob, `pliego-${sheet.label}-${dpi}dpi.png`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo exportar el pliego");
     }
@@ -911,6 +985,10 @@ function HalftonePage() {
               </button>
             ))}
           </div>
+          <p className="text-xs text-muted-foreground">
+            PNG/JPG: {Math.round((printWidth / 2.54) * dpi)} ×{" "}
+            {Math.round((printHeight / 2.54) * dpi)} px. La vista previa mantiene su escala.
+          </p>
           <FormatDownload onDownload={download} />
         </Section>
 
@@ -1490,6 +1568,56 @@ function applyGamma(data: Uint8ClampedArray, gamma: number) {
     data[i] = 255 * Math.pow(data[i] / 255, 1 / gamma);
     data[i + 1] = 255 * Math.pow(data[i + 1] / 255, 1 / gamma);
     data[i + 2] = 255 * Math.pow(data[i + 2] / 255, 1 / gamma);
+  }
+}
+
+function getLuminance(r: number, g: number, b: number): number {
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+function shadowMask(luminance: number, threshold = 0.55, softness = 0.2): number {
+  const transition = Math.max(0, Math.min(1, (threshold + softness - luminance) / (2 * softness)));
+  return transition * transition * (3 - 2 * transition);
+}
+
+function getShadowInkAmount(
+  data: Uint8ClampedArray,
+  offset: number,
+  gamma: number,
+  intensity: number,
+): number {
+  const luminance = getLuminance(data[offset], data[offset + 1], data[offset + 2]);
+  const correctedLuminance = Math.pow(luminance, 1 / gamma);
+  return shadowMask(correctedLuminance) * intensity;
+}
+
+function getBackgroundKey(mode: BackgroundMode, target: string): string {
+  if (mode === "white") return "#ffffff";
+  if (mode === "black") return "#000000";
+  return target;
+}
+
+function colorsMatch(first: string, second: string, tolerance: number): boolean {
+  const a = hexToRgb(first);
+  const b = hexToRgb(second);
+  return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b) <= tolerance;
+}
+
+function applySelectedBackground(
+  data: Uint8ClampedArray,
+  source: Uint8ClampedArray,
+  mode: BackgroundMode,
+  target: string,
+  tolerance: number,
+  protectEdges: boolean,
+  garmentMask: GarmentMask | null,
+) {
+  if (!garmentMask) {
+    applyColorKey(data, source, mode, target, tolerance, protectEdges);
+    return;
+  }
+  for (let pixel = 0; pixel < garmentMask.background.length; pixel++) {
+    if (garmentMask.background[pixel]) data[pixel * 4 + 3] = 0;
   }
 }
 
