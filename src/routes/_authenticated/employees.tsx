@@ -1,7 +1,16 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BadgeCheck, Loader2, Pencil, Save, Trash2, X } from "lucide-react";
+import {
+  BadgeCheck,
+  Loader2,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -14,6 +23,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -60,6 +75,8 @@ function EmployeesPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   useEffect(() => {
     employeesController
@@ -75,6 +92,11 @@ function EmployeesPage() {
   const reset = () => {
     setForm(emptyForm);
     setEditingId(null);
+  };
+
+  const openNewEmployee = () => {
+    reset();
+    setEmployeeDialogOpen(true);
   };
 
   const submit = async () => {
@@ -109,6 +131,7 @@ function EmployeesPage() {
         toast.success("Empleado creado");
       }
       reset();
+      setEmployeeDialogOpen(false);
     } catch {
       toast.error("No se pudo guardar el empleado");
     } finally {
@@ -139,6 +162,13 @@ function EmployeesPage() {
     }
   };
 
+  const filteredRows = rows.filter((employee) =>
+    `${employee.first_name} ${employee.last_name ?? ""}`
+      .trim()
+      .toLocaleLowerCase()
+      .includes(employeeSearch.trim().toLocaleLowerCase()),
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -146,72 +176,104 @@ function EmployeesPage() {
         description="Personal del estudio: cargo, contacto y estado activo."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {editingId ? "Editar empleado" : "Nuevo empleado"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="e_first">Nombre *</Label>
-            <Input
-              id="e_first"
-              value={form.first_name}
-              onChange={(ev) => set("first_name", ev.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="e_last">Apellido</Label>
-            <Input
-              id="e_last"
-              value={form.last_name}
-              onChange={(ev) => set("last_name", ev.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="e_role">Cargo</Label>
-            <Input
-              id="e_role"
-              placeholder="Diseñador, ventas…"
-              value={form.role_title}
-              onChange={(ev) => set("role_title", ev.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="e_email">Email</Label>
-            <Input
-              id="e_email"
-              type="email"
-              value={form.email}
-              onChange={(ev) => set("email", ev.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="e_phone">Teléfono</Label>
-            <Input
-              id="e_phone"
-              value={form.phone}
-              onChange={(ev) => set("phone", ev.target.value)}
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <Button onClick={submit} disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              {editingId ? "Guardar" : "Crear"}
-            </Button>
-            {editingId && (
-              <Button variant="outline" onClick={reset}>
-                <X className="mr-2 h-4 w-4" /> Cancelar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={employeeSearch}
+            onChange={(event) => setEmployeeSearch(event.target.value)}
+            placeholder="Buscar por nombre de empleado…"
+            aria-label="Buscar por nombre de empleado"
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={openNewEmployee}>
+          <Plus className="mr-2 h-4 w-4" /> Nuevo empleado
+        </Button>
+      </div>
+
+      <Dialog
+        open={employeeDialogOpen}
+        onOpenChange={(isOpen) => {
+          setEmployeeDialogOpen(isOpen);
+          if (!isOpen) reset();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <Card className="border-0 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">
+                {editingId ? "Editar empleado" : "Nuevo empleado"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="e_first">Nombre *</Label>
+                <Input
+                  id="e_first"
+                  value={form.first_name}
+                  onChange={(ev) => set("first_name", ev.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e_last">Apellido</Label>
+                <Input
+                  id="e_last"
+                  value={form.last_name}
+                  onChange={(ev) => set("last_name", ev.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e_role">Cargo</Label>
+                <Input
+                  id="e_role"
+                  placeholder="Diseñador, ventas…"
+                  value={form.role_title}
+                  onChange={(ev) => set("role_title", ev.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e_email">Email</Label>
+                <Input
+                  id="e_email"
+                  type="email"
+                  value={form.email}
+                  onChange={(ev) => set("e_email", ev.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="e_phone">Teléfono</Label>
+                <Input
+                  id="e_phone"
+                  value={form.phone}
+                  onChange={(ev) => set("e_phone", ev.target.value)}
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <Button onClick={submit} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  {editingId ? "Guardar" : "Crear"}
+                </Button>
+                {editingId && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      reset();
+                      setEmployeeDialogOpen(false);
+                    }}
+                  >
+                    <X className="mr-2 h-4 w-4" /> Cancelar
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -221,7 +283,7 @@ function EmployeesPage() {
         <EmptyState
           icon={BadgeCheck}
           title="Sin empleados"
-          description="Registra al personal autorizado del estudio."
+          description="Registra al personal autorizado del estudio con el botón Nuevo empleado."
         />
       ) : (
         <Card>
@@ -237,7 +299,16 @@ function EmployeesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((e) => (
+                {filteredRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No se encontraron empleados con ese nombre.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRows.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium">
                       {e.first_name} {e.last_name ?? ""}
@@ -273,6 +344,7 @@ function EmployeesPage() {
                             email: e.email ?? "",
                             phone: e.phone ?? "",
                           });
+                          setEmployeeDialogOpen(true);
                         }}
                       >
                         <Pencil className="h-4 w-4" />

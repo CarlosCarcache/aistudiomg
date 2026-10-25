@@ -8,12 +8,7 @@ import { EmptyState } from "@/views/EmptyState";
 import { galleryController } from "@/controllers/gallery.controller";
 import { catalogController } from "@/controllers/catalog.controller";
 import { clientsController } from "@/controllers/clients.controller";
-import type {
-  Client,
-  GalleryImage,
-  GalleryShare,
-  ProductCategory,
-} from "@/models/types";
+import type { Client, GalleryImage, GalleryShare, ProductCategory } from "@/models/types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/gallery")({
   component: GalleryPage,
@@ -64,6 +66,7 @@ function GalleryPage() {
   const [shares, setShares] = useState<GalleryShare[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [addProductOpen, setAddProductOpen] = useState(false);
   const [filterCat, setFilterCat] = useState<string>(ALL);
   const [form, setForm] = useState({
     title: "",
@@ -98,9 +101,7 @@ function GalleryPage() {
   );
   const clientName = useMemo(
     () =>
-      Object.fromEntries(
-        clients.map((c) => [c.id, `${c.first_name} ${c.last_name ?? ""}`.trim()]),
-      ),
+      Object.fromEntries(clients.map((c) => [c.id, `${c.first_name} ${c.last_name ?? ""}`.trim()])),
     [clients],
   );
 
@@ -133,6 +134,7 @@ function GalleryPage() {
       const newUrls = await galleryController.resolveMany(created);
       setUrls((prev) => ({ ...prev, ...newUrls }));
       setForm((f) => ({ ...f, title: "", price: "" }));
+      setAddProductOpen(false);
       toast.success(`${created.length} imagen(es) subida(s)`);
     } catch {
       toast.error("No se pudo subir la imagen");
@@ -212,98 +214,103 @@ function GalleryPage() {
       />
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nueva imagen</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="g-title">Título (opcional)</Label>
-              <Input
-                id="g-title"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Taza personalizada"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="g-price">Precio por imagen (C$)</Label>
-              <Input
-                id="g-price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Categoría</Label>
-                <Select
-                  value={form.category_id}
-                  onValueChange={(v) => setForm({ ...form, category_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin categoría" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sin categoría</SelectItem>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cliente</Label>
-                <Select
-                  value={form.client_id}
-                  onValueChange={(v) => setForm({ ...form, client_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sin cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sin cliente</SelectItem>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {clientName[c.id]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="g-portfolio"
-                checked={form.is_portfolio}
-                onCheckedChange={(v) => setForm({ ...form, is_portfolio: v })}
-              />
-              <Label htmlFor="g-portfolio">Mostrar en el portafolio público</Label>
-            </div>
-          </div>
-          <div>
-            <ImageDropzone
-              multiple
-              onFiles={handleFiles}
-              hint={
-                uploading
-                  ? "Subiendo…"
-                  : "Arrastra imágenes aquí o haz click para seleccionar"
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Enlaces seguros por cliente</CardTitle>
+          <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+            <Button onClick={() => setAddProductOpen(true)}>Agregar Producto</Button>
+            <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nueva imagen</DialogTitle>
+                <DialogDescription>
+                  Agrega imágenes y configura su precio, categoría, cliente y visibilidad.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="g-title">Título (opcional)</Label>
+                    <Input
+                      id="g-title"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="Taza personalizada"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="g-price">Precio por imagen (C$)</Label>
+                    <Input
+                      id="g-price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Categoría</Label>
+                      <Select
+                        value={form.category_id}
+                        onValueChange={(v) => setForm({ ...form, category_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sin categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE}>Sin categoría</SelectItem>
+                          {categories.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Cliente</Label>
+                      <Select
+                        value={form.client_id}
+                        onValueChange={(v) => setForm({ ...form, client_id: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sin cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NONE}>Sin cliente</SelectItem>
+                          {clients.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {clientName[c.id]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="g-portfolio"
+                      checked={form.is_portfolio}
+                      onCheckedChange={(v) => setForm({ ...form, is_portfolio: v })}
+                    />
+                    <Label htmlFor="g-portfolio">Mostrar en el portafolio público</Label>
+                  </div>
+                </div>
+                <div>
+                  <ImageDropzone
+                    multiple
+                    onFiles={handleFiles}
+                    hint={
+                      uploading
+                        ? "Subiendo…"
+                        : "Arrastra imágenes aquí o haz click para seleccionar"
+                    }
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -329,18 +336,19 @@ function GalleryPage() {
             <ul className="divide-y divide-border rounded-xl border border-border">
               {shares.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 p-3 text-sm">
-                  <span className="font-medium">
-                    {clientName[s.client_id] ?? "Cliente"}
-                  </span>
+                  <div className="min-w-0">
+                    <span className="font-medium">{clientName[s.client_id] ?? "Cliente"}</span>
+                    <p className="text-xs text-muted-foreground">
+                      {s.is_category_scoped
+                        ? `Categoría: ${catName[s.category_id ?? ""] ?? "Sin categoría"}`
+                        : "Galería completa"}
+                    </p>
+                  </div>
                   <code className="truncate rounded bg-muted px-2 py-1 font-mono text-xs">
                     /g/{s.token}
                   </code>
                   <div className="ml-auto flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyLink(s.token)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => copyLink(s.token)}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button
@@ -412,13 +420,8 @@ function GalleryPage() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-                {img.category_id && (
-                  <Badge variant="secondary">{catName[img.category_id]}</Badge>
-                )}
-                <Select
-                  value={img.client_id ?? NONE}
-                  onValueChange={(v) => assign(img, v)}
-                >
+                {img.category_id && <Badge variant="secondary">{catName[img.category_id]}</Badge>}
+                <Select value={img.client_id ?? NONE} onValueChange={(v) => assign(img, v)}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Sin cliente" />
                   </SelectTrigger>

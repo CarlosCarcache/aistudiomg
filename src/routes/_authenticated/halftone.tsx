@@ -307,7 +307,7 @@ function HalftonePage() {
         const cy = xx * sin + yy * cos + c.height / 2;
 
         // Color del punto
-        if (colorData && !garmentMask) {
+        if (colorData) {
           ctx.fillStyle = `rgb(${colorData[i]}, ${colorData[i + 1]}, ${colorData[i + 2]})`;
           ctx.strokeStyle = ctx.fillStyle;
         } else {
@@ -726,7 +726,7 @@ function HalftonePage() {
     <div className="grid min-h-[calc(100vh-6rem)] gap-3 xl:grid-cols-[340px_minmax(0,1fr)]">
       <aside className="max-h-[calc(100vh-7rem)] space-y-3 overflow-y-auto rounded-2xl border border-border bg-card/40 p-3">
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-lg border border-border bg-background/95 p-2 backdrop-blur">
-          <span className="text-sm font-bold">Sublimax PrintLab</span>
+          <span className="text-sm font-bold">Sublimx Studio MG</span>
           <Button variant="outline" size="sm" onClick={reset}>
             <RotateCcw className="mr-1 h-4 w-4" />
             Reset
@@ -812,7 +812,11 @@ function HalftonePage() {
                   setBackgroundMode(mode);
                   setRemoveBg(true);
                   if (mode === "white") setTargetColor("#ffffff");
-                  if (mode === "black") setTargetColor("#000000");
+                  if (mode === "black") {
+                    setTargetColor("#000000");
+                    setTolerance(0);
+                    setColorMode("color");
+                  }
                 }}
                 className={`rounded-md px-1 py-2 text-[10px] font-semibold ${backgroundMode === mode ? "bg-primary text-primary-foreground" : "bg-muted"}`}
               >

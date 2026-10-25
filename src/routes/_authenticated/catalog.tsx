@@ -1,7 +1,7 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Loader2, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Check, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -13,9 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -23,6 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/catalog")({
   component: CatalogPage,
@@ -52,6 +65,9 @@ function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [catName, setCatName] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
   const [prod, setProd] = useState({
     name: "",
     description: "",
@@ -61,6 +77,12 @@ function CatalogPage() {
   });
   const [saving, setSaving] = useState(false);
   const [localImage, setLocalImage] = useState<DroppedFile | null>(null);
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+
+  const resetProductForm = () => {
+    setProd({ name: "", description: "", price: "", image_url: "", category_id: "" });
+    setLocalImage(null);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -97,6 +119,42 @@ function CatalogPage() {
     }
   };
 
+  const startCategoryEdit = (category: ProductCategory) => {
+    if (!perm.guard("update")) return;
+    setEditingCategoryId(category.id);
+    setEditingCategoryName(category.name);
+  };
+
+  const updateCategory = async () => {
+    if (!editingCategoryId || !perm.guard("update")) return;
+    const name = editingCategoryName.trim();
+    if (!name) {
+      toast.error("El nombre de la categoría es obligatorio");
+      return;
+    }
+    setSavingCategory(true);
+    try {
+      const updated = await catalogController.updateCategory(editingCategoryId, { name });
+      setCategories((current) =>
+        current
+          .map((category) => (category.id === updated.id ? updated : category))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setEditingCategoryId(null);
+      setEditingCategoryName("");
+      toast.success("Categoría actualizada");
+    } catch {
+      toast.error("No se pudo actualizar la categoría");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const cancelCategoryEdit = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+  };
+
   const removeCategory = async (id: string) => {
     if (!perm.guard("delete")) return;
     try {
@@ -109,6 +167,7 @@ function CatalogPage() {
   };
 
   const addProduct = async () => {
+    if (!perm.guard("create")) return;
     if (!prod.name.trim()) return toast.error("El nombre es obligatorio");
     if (!user) return toast.error("Inicia sesión para crear productos");
     setSaving(true);
@@ -130,8 +189,8 @@ function CatalogPage() {
       });
       const [signed] = await catalogController.withSignedUrls([created]);
       setProducts((p) => [signed, ...p]);
-      setProd({ name: "", description: "", price: "", image_url: "", category_id: "" });
-      setLocalImage(null);
+      resetProductForm();
+      setProductDialogOpen(false);
       toast.success("Producto creado");
     } catch {
       toast.error("No se pudo crear el producto");
@@ -185,107 +244,188 @@ function CatalogPage() {
               <Plus className="mr-2 h-4 w-4" /> Agregar
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {categories.length === 0 && (
-              <span className="text-sm text-muted-foreground">
-                Aún no hay categorías.
-              </span>
-            )}
-            {categories.map((c) => (
-              <Badge key={c.id} variant="secondary" className="gap-1 py-1 pl-3 pr-1">
-                {c.name}
-                <button
-                  type="button"
-                  aria-label={`Eliminar ${c.name}`}
-                  className="rounded-full p-1 hover:bg-background/60"
-                  onClick={() => removeCategory(c.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
+          {categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aún no hay categorías.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="w-28 text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell>
+                      {editingCategoryId === category.id ? (
+                        <Input
+                          autoFocus
+                          aria-label={`Nuevo nombre para ${category.name}`}
+                          value={editingCategoryName}
+                          onChange={(event) => setEditingCategoryName(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") void updateCategory();
+                            if (event.key === "Escape") cancelCategoryEdit();
+                          }}
+                        />
+                      ) : (
+                        category.name
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {editingCategoryId === category.id ? (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Guardar nombre de categoría"
+                            title="Guardar"
+                            onClick={() => void updateCategory()}
+                            disabled={savingCategory}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Cancelar edición"
+                            title="Cancelar"
+                            onClick={cancelCategoryEdit}
+                            disabled={savingCategory}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Editar ${category.name}`}
+                          title="Editar categoría"
+                          onClick={() => startCategoryEdit(category)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Eliminar ${category.name}`}
+                        title="Eliminar categoría"
+                        onClick={() => removeCategory(category.id)}
+                        disabled={editingCategoryId === category.id}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nuevo producto</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="p_name">Nombre *</Label>
-            <Input
-              id="p_name"
-              value={prod.name}
-              onChange={(e) => setProd({ ...prod, name: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="p_price">Precio</Label>
-            <Input
-              id="p_price"
-              type="number"
-              step="0.01"
-              value={prod.price}
-              onChange={(e) => setProd({ ...prod, price: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Categoría</Label>
-            <Select
-              value={prod.category_id}
-              onValueChange={(v) => setProd({ ...prod, category_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Imagen del producto</Label>
-            <ImageDropzone
-              hint="Arrastra una imagen de tu ordenador o haz click"
-              preview={localImage?.dataUrl ?? null}
-              onClear={() => setLocalImage(null)}
-              onFiles={(files) => setLocalImage(files[0] ?? null)}
-            />
-            <Input
-              id="p_img"
-              placeholder="…o pega una URL de imagen (https://…)"
-              value={prod.image_url}
-              onChange={(e) => setProd({ ...prod, image_url: e.target.value })}
-              disabled={!!localImage}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-3">
-            <Label htmlFor="p_desc">Descripción</Label>
-            <Textarea
-              id="p_desc"
-              rows={2}
-              value={prod.description}
-              onChange={(e) => setProd({ ...prod, description: e.target.value })}
-            />
-          </div>
-          <div className="md:col-span-3">
-            <Button onClick={addProduct} disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Crear producto
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Dialog
+        open={productDialogOpen}
+        onOpenChange={(isOpen) => {
+          setProductDialogOpen(isOpen);
+          if (!isOpen) resetProductForm();
+        }}
+      >
+        <div className="hidden">
+          <Button
+            onClick={() => {
+              if (!perm.guard("create")) return;
+              resetProductForm();
+              setProductDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Agregar Producto
+          </Button>
+        </div>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nuevo producto</DialogTitle>
+          </DialogHeader>
+          <Card className="border-0 shadow-none">
+            <CardContent className="grid gap-4 pt-0 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="p_name">Nombre *</Label>
+                <Input
+                  id="p_name"
+                  value={prod.name}
+                  onChange={(e) => setProd({ ...prod, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="p_price">Precio</Label>
+                <Input
+                  id="p_price"
+                  type="number"
+                  step="0.01"
+                  value={prod.price}
+                  onChange={(e) => setProd({ ...prod, price: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Categoría</Label>
+                <Select
+                  value={prod.category_id}
+                  onValueChange={(v) => setProd({ ...prod, category_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin categoría" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Imagen del producto</Label>
+                <ImageDropzone
+                  hint="Arrastra una imagen de tu ordenador o haz click"
+                  preview={localImage?.dataUrl ?? null}
+                  onClear={() => setLocalImage(null)}
+                  onFiles={(files) => setLocalImage(files[0] ?? null)}
+                />
+                <Input
+                  id="p_img"
+                  placeholder="…o pega una URL de imagen (https://…)"
+                  value={prod.image_url}
+                  onChange={(e) => setProd({ ...prod, image_url: e.target.value })}
+                  disabled={!!localImage}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="p_desc">Descripción</Label>
+                <Textarea
+                  id="p_desc"
+                  rows={2}
+                  value={prod.description}
+                  onChange={(e) => setProd({ ...prod, description: e.target.value })}
+                />
+              </div>
+              <div className="md:col-span-3">
+                <Button onClick={addProduct} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  Crear producto
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -296,6 +436,7 @@ function CatalogPage() {
           icon={BookOpen}
           title="Sin productos"
           description="Crea tu primer producto para mostrarlo en el catálogo."
+          className="hidden"
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

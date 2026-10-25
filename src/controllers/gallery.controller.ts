@@ -96,10 +96,20 @@ export const galleryController = {
     return data ?? [];
   },
 
-  async createShare(userId: string, clientId: string): Promise<GalleryShare> {
+  async createShare(
+    userId: string,
+    clientId: string,
+    categoryId: string | null = null,
+    isCategoryScoped = false,
+  ): Promise<GalleryShare> {
     const { data, error } = await supabase
       .from("gallery_shares")
-      .insert({ user_id: userId, client_id: clientId })
+      .insert({
+        user_id: userId,
+        client_id: clientId,
+        category_id: categoryId,
+        is_category_scoped: isCategoryScoped,
+      })
       .select()
       .single();
     if (error) throw error;

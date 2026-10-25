@@ -6,6 +6,8 @@ import {
   Eye,
   Loader2,
   Pencil,
+  Plus,
+  Search,
   Save,
   Trash2,
   Users,
@@ -83,6 +85,8 @@ function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
   const [ordersClient, setOrdersClient] = useState<Client | null>(null);
   const [clientOrders, setClientOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -103,6 +107,11 @@ function ClientsPage() {
     setEditingId(null);
   };
 
+  const openNewClient = () => {
+    reset();
+    setClientDialogOpen(true);
+  };
+
   const startEdit = (c: Client) => {
     setEditingId(c.id);
     setForm({
@@ -112,6 +121,7 @@ function ClientsPage() {
       phone: c.phone ?? "",
       notes: c.notes ?? "",
     });
+    setClientDialogOpen(true);
   };
 
   const submit = async () => {
@@ -146,6 +156,7 @@ function ClientsPage() {
         toast.success("Cliente creado");
       }
       reset();
+      setClientDialogOpen(false);
     } catch {
       toast.error("No se pudo guardar el cliente");
     } finally {
@@ -176,6 +187,13 @@ function ClientsPage() {
       .finally(() => setOrdersLoading(false));
   };
 
+  const filteredClients = clients.filter((client) =>
+    `${client.first_name} ${client.last_name ?? ""}`
+      .trim()
+      .toLocaleLowerCase()
+      .includes(clientSearch.trim().toLocaleLowerCase()),
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -183,72 +201,104 @@ function ClientsPage() {
         description="Alta, edición y borrado de clientes con sus datos de contacto."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {editingId ? "Editar cliente" : "Nuevo cliente"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="first_name">Nombre *</Label>
-            <Input
-              id="first_name"
-              value={form.first_name}
-              onChange={(e) => set("first_name", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="last_name">Apellido</Label>
-            <Input
-              id="last_name"
-              value={form.last_name}
-              onChange={(e) => set("last_name", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => set("email", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              value={form.phone}
-              onChange={(e) => set("phone", e.target.value)}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-3">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea
-              id="notes"
-              rows={2}
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 md:col-span-3">
-            <Button onClick={submit} disabled={saving}>
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              {editingId ? "Guardar cambios" : "Crear cliente"}
-            </Button>
-            {editingId && (
-              <Button variant="outline" onClick={reset}>
-                <X className="mr-2 h-4 w-4" /> Cancelar
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={clientSearch}
+            onChange={(e) => setClientSearch(e.target.value)}
+            placeholder="Buscar por nombre de cliente…"
+            aria-label="Buscar por nombre de cliente"
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={openNewClient}>
+          <Plus className="mr-2 h-4 w-4" /> Nuevo cliente
+        </Button>
+      </div>
+
+      <Dialog
+        open={clientDialogOpen}
+        onOpenChange={(isOpen) => {
+          setClientDialogOpen(isOpen);
+          if (!isOpen) reset();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <Card className="border-0 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-base">
+                {editingId ? "Editar cliente" : "Nuevo cliente"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">Nombre *</Label>
+                <Input
+                  id="first_name"
+                  value={form.first_name}
+                  onChange={(e) => set("first_name", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Apellido</Label>
+                <Input
+                  id="last_name"
+                  value={form.last_name}
+                  onChange={(e) => set("last_name", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => set("email", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => set("phone", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea
+                  id="notes"
+                  rows={2}
+                  value={form.notes}
+                  onChange={(e) => set("notes", e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2 md:col-span-3">
+                <Button onClick={submit} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  {editingId ? "Guardar cambios" : "Crear cliente"}
+                </Button>
+                {editingId && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      reset();
+                      setClientDialogOpen(false);
+                    }}
+                  >
+                    <X className="mr-2 h-4 w-4" /> Cancelar
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -258,7 +308,7 @@ function ClientsPage() {
         <EmptyState
           icon={Users}
           title="Sin clientes"
-          description="Registra tu primer cliente con el formulario de arriba."
+          description="Registra tu primer cliente con el botón Nuevo cliente."
         />
       ) : (
         <Card>
@@ -273,7 +323,16 @@ function ClientsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((c) => (
+                {filteredClients.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      No se encontraron clientes con ese nombre.
+                    </TableCell>
+                  </TableRow>
+                ) : filteredClients.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">
                       {c.first_name} {c.last_name ?? ""}

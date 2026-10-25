@@ -1,17 +1,30 @@
 // View: estado vacío reutilizable.
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description?: string;
   action?: ReactNode;
+  className?: string;
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: EmptyStateProps) {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 px-6 py-16 text-center">
+    <div
+      className={cn(
+        "grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 px-6 py-16 text-center",
+        className,
+      )}
+    >
       <Icon className="h-10 w-10 text-muted-foreground" />
       <h3 className="mt-3 font-medium">{title}</h3>
       {description && (

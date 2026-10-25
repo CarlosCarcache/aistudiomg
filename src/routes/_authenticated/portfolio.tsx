@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Folder, FolderOpen, GalleryHorizontalEnd, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, Folder, FolderOpen, GalleryHorizontalEnd, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { catalogController } from "@/controllers/catalog.controller";
 import { ordersController } from "@/controllers/orders.controller";
@@ -11,6 +11,12 @@ import { EmptyState } from "@/views/EmptyState";
 import { galleryController } from "@/controllers/gallery.controller";
 import type { GalleryImage, Order, ProductCategory } from "@/models/types";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/portfolio")({
   component: PortfolioPage,
@@ -55,7 +61,7 @@ function PortfolioPage() {
         title="Portafolio"
         description="Imágenes marcadas como portafolio, visibles públicamente."
       />
-      <CategoryFolders />
+      <CategoryFolders images={images} urls={urls} />
       {loading ? (
         <div className="grid place-items-center py-16">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -66,32 +72,21 @@ function PortfolioPage() {
           title="Portafolio vacío"
           description="Marca imágenes como portafolio desde la galería para mostrarlas aquí."
         />
-      ) : (
-        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
-          {images.map((img) => (
-            <Card key={img.id} className="overflow-hidden break-inside-avoid p-0">
-              {urls[img.id] ? (
-                <img
-                  src={urls[img.id]}
-                  alt={img.title}
-                  loading="lazy"
-                  className="w-full object-cover"
-                />
-              ) : (
-                <div className="aspect-square bg-muted" />
-              )}
-              <p className="p-3 text-sm font-medium">{img.title}</p>
-            </Card>
-          ))}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
-function CategoryFolders() {
+function CategoryFolders({
+  images,
+  urls,
+}: {
+  images: GalleryImage[];
+  urls: Record<string, string>;
+}) {
   const [cats, setCats] = useState<ProductCategory[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<GalleryImage | null>(null);
   useEffect(() => {
     catalogController.listCategories().then(setCats).catch(() => {});
     ordersController.list().then(setOrders).catch(() => {});
@@ -100,9 +95,13 @@ function CategoryFolders() {
   const inFolder = (id: string) =>
     orders.filter((o) => (id === "none" ? !o.category_id : o.category_id === id));
   const current = open ? folders.find((f) => f.id === open) : null;
+  const currentImages = current
+    ? images.filter((image) => (image.category_id ?? "none") === current.id)
+    : [];
+  const currentOrders = current ? inFolder(current.id) : [];
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Pedidos por categoría</h2>
+      <h2 className="text-lg font-semibold">Portafolio e historial por categoría</h2>
       {current ? (
         <div className="space-y-3">
           <Button variant="ghost" size="sm" onClick={() => setOpen(null)}>
@@ -111,11 +110,38 @@ function CategoryFolders() {
           <h3 className="flex items-center gap-2 font-medium">
             <FolderOpen className="h-5 w-5 text-primary" /> {current.name}
           </h3>
-          {inFolder(current.id).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Esta carpeta no tiene pedidos.</p>
+          {currentImages.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium">Imágenes del portafolio</h4>
+              <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
+                {currentImages.map((image) => (
+                  <Card
+                    key={image.id}
+                    className="flex items-center justify-between gap-3 break-inside-avoid p-3"
+                  >
+                    <p className="text-sm font-medium">{image.title}</p>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setPreviewImage(image)}
+                      disabled={!urls[image.id]}
+                      aria-label={`Ver imagen ${image.title}`}
+                      title="Ver imagen"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+          {currentOrders.length === 0 ? (
+            currentImages.length === 0 && (
+              <p className="text-sm text-muted-foreground">Esta carpeta no tiene imágenes ni pedidos.</p>
+            )
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {inFolder(current.id).map((o) => (
+              {currentOrders.map((o) => (
                 <Card key={o.id} className="p-3 space-y-1">
                   <p className="font-medium">{o.title}</p>
                   {o.description && <p className="text-xs text-muted-foreground">{o.description}</p>}
@@ -136,11 +162,31 @@ function CategoryFolders() {
               className="flex flex-col items-center gap-2 rounded-lg border bg-card p-4 text-center hover:bg-accent transition-colors">
               <Folder className="h-10 w-10 text-primary" />
               <span className="text-sm font-medium">{f.name}</span>
-              <span className="text-xs text-muted-foreground">{inFolder(f.id).length} pedidos</span>
+              <span className="text-xs text-muted-foreground">
+                {images.filter((image) => (image.category_id ?? "none") === f.id).length} imágenes ·{" "}
+                {inFolder(f.id).length} pedidos
+              </span>
             </button>
           ))}
         </div>
       )}
+      <Dialog
+        open={!!previewImage}
+        onOpenChange={(isOpen) => !isOpen && setPreviewImage(null)}
+      >
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{previewImage?.title}</DialogTitle>
+          </DialogHeader>
+          {previewImage && urls[previewImage.id] && (
+            <img
+              src={urls[previewImage.id]}
+              alt={previewImage.title}
+              className="max-h-[75vh] w-full rounded-md object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

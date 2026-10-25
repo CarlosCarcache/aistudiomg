@@ -56,8 +56,8 @@ const tools: Item[] = [
 
 const business: Item[] = [
   { title: "Galería", url: "/gallery", icon: Images },
-  { title: "Portafolio", url: "/portfolio", icon: GalleryHorizontalEnd },
-  { title: "Catálogo", url: "/catalog", icon: BookOpen },
+  { title: "Historial de Pedidos", url: "/portfolio", icon: GalleryHorizontalEnd },
+  { title: "Categorías", url: "/catalog", icon: BookOpen },
   { title: "Clientes", url: "/clients", icon: Users },
   { title: "Pedidos", url: "/orders", icon: ClipboardList },
   { title: "Empleados", url: "/employees", icon: BadgeCheck },

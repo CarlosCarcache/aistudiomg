@@ -1,7 +1,7 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardList, Loader2, Pencil, Trash2 } from "lucide-react";
+import { ClipboardList, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -20,6 +20,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -69,6 +75,7 @@ function OrdersPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [sharedUrls, setSharedUrls] = useState<Record<string, string>>({});
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -118,6 +125,7 @@ function OrdersPage() {
 
   const resetForm = () => {
     setEditingOrder(null);
+    setOrderDialogOpen(false);
     setTitle("");
     setDescription("");
     setNotes("");
@@ -208,7 +216,7 @@ function OrdersPage() {
     setPaymentMethod(order.payment_method ?? "");
     setDueDate(order.due_date ?? "");
     setStatus(order.status);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setOrderDialogOpen(true);
   };
 
   const handleStatus = async (id: string, next: OrderStatus) => {
@@ -262,7 +270,7 @@ function OrdersPage() {
         <EmptyState
           icon={ClipboardList}
           title="Sin pedidos en esta etapa"
-          description="Crea un pedido nuevo con el formulario de arriba."
+          description="Crea un pedido nuevo con el botón Nuevo pedido."
         />
       );
     }
@@ -378,13 +386,32 @@ function OrdersPage() {
         description="Controla los pedidos nuevos, en proceso y terminados."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {editingOrder ? "Editar pedido" : "Nuevo pedido"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="flex justify-end">
+        <Button
+          onClick={() => {
+            resetForm();
+            setOrderDialogOpen(true);
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Nuevo pedido
+        </Button>
+      </div>
+
+      <Dialog
+        open={orderDialogOpen}
+        onOpenChange={(isOpen) => {
+          setOrderDialogOpen(isOpen);
+          if (!isOpen) resetForm();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingOrder ? "Editar pedido" : "Nuevo pedido"}
+            </DialogTitle>
+          </DialogHeader>
+          <Card className="border-0 shadow-none">
+            <CardContent className="pt-0">
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="title">Título</Label>
@@ -542,8 +569,10 @@ function OrdersPage() {
               </div>
             </div>
           </form>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="nuevo">
         <TabsList>

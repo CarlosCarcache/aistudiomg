@@ -83,7 +83,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "AI Studio MG · Diseño asistido por IA" },
       { name: "twitter:description", content: "Diseño y gestión de proyectos en AI Studio MG." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/brand/icon.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
