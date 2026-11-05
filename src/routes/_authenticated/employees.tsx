@@ -122,10 +122,10 @@ function EmployeesPage() {
         const updated = await employeesController.update(editingId, payload);
         setRows((r) => r.map((e) => (e.id === updated.id ? updated : e)));
         toast.success("Empleado actualizado");
-      } else {
+      } else if (user) {
         const created = await employeesController.create({
           ...payload,
-          user_id: user!.id,
+          user_id: user.id,
         });
         setRows((r) => [created, ...r]);
         toast.success("Empleado creado");
@@ -140,6 +140,7 @@ function EmployeesPage() {
   };
 
   const toggleActive = async (e: Employee) => {
+    if (!perm.guard("update")) return;
     try {
       const updated = await employeesController.update(e.id, {
         active: !e.active,
@@ -238,7 +239,7 @@ function EmployeesPage() {
                   id="e_email"
                   type="email"
                   value={form.email}
-                  onChange={(ev) => set("e_email", ev.target.value)}
+                  onChange={(ev) => set("email", ev.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -246,7 +247,7 @@ function EmployeesPage() {
                 <Input
                   id="e_phone"
                   value={form.phone}
-                  onChange={(ev) => set("e_phone", ev.target.value)}
+                  onChange={(ev) => set("phone", ev.target.value)}
                 />
               </div>
               <div className="flex items-end gap-2">

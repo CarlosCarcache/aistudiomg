@@ -4,3 +4,6 @@
 - [ ] Organizar proyectos en carpetas por categoría
 - [ ] Verificar formulario compartido, imágenes, precios y recepción en Pedidos
 - [ ] Enviar cambios a main (requiere seleccionar main en la sincronización Git de Lovable)
+- [ ] Revisar código, seguridad y errores de los módulos
+- [ ] Corregir errores confirmados y ejecutar pruebas disponibles
+- [ ] Verificar recorridos principales con sesión y guardar los cambios
