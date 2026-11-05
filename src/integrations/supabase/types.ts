@@ -215,30 +215,43 @@ export type Database = {
       }
       gallery_shares: {
         Row: {
+          category_id: string | null
           client_id: string
           created_at: string
           id: string
+          is_category_scoped: boolean
           token: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           client_id: string
           created_at?: string
           id?: string
+          is_category_scoped?: boolean
           token?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          category_id?: string | null
           client_id?: string
           created_at?: string
           id?: string
+          is_category_scoped?: boolean
           token?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gallery_shares_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gallery_shares_client_id_fkey"
             columns: ["client_id"]

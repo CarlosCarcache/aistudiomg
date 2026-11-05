@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState, useEffect, type FormEvent } from "react";
 import { Send, Download, Sparkles, ImageIcon, Loader2, User, Bot } from "lucide-react";
 import { toast } from "sonner";
+import { aiImage } from "@/lib/image-utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -83,13 +84,7 @@ function ChatPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: trimmed }),
-      });
-      const data = (await res.json()) as { image?: string; error?: string };
-      if (!res.ok || !data.image) throw new Error(data.error ?? "Error generando imagen");
+      const image = await aiImage(trimmed);
 
       setMessages((m) => [
         ...m,
@@ -97,10 +92,11 @@ function ChatPage() {
           id: crypto.randomUUID(),
           role: "assistant",
           content: "Aquí tienes tu imagen. Puedes descargarla en el formato que prefieras.",
-          image: data.image,
+          image,
         },
       ]);
     } catch (err) {
+      setPrompt(trimmed);
       const msg = err instanceof Error ? err.message : "Error";
       toast.error(msg);
       setMessages((m) => [
@@ -201,7 +197,7 @@ function ChatPage() {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => handleDownload(msg.image!)}
+                        onClick={() => { if (msg.image) void handleDownload(msg.image); }}
                       >
                         <Download className="h-4 w-4" />
                         Descargar {format.toUpperCase()}

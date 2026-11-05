@@ -30,7 +30,6 @@ import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedVectorizeRouteImport } from './routes/_authenticated/vectorize'
-import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-image'
 import { Route as GTokenRouteImport } from './routes/g.$token'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 
@@ -138,11 +137,6 @@ const AuthenticatedVectorizeRoute = AuthenticatedVectorizeRouteImport.update({
   path: '/vectorize',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ApiGenerateImageRoute = ApiGenerateImageRouteImport.update({
-  id: '/api/generate-image',
-  path: '/api/generate-image',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const GTokenRoute = GTokenRouteImport.update({
   id: '/g/$token',
   path: '/g/$token',
@@ -175,7 +169,6 @@ export interface FileRoutesByFullPath {
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -200,7 +193,6 @@ export interface FileRoutesByTo {
   '/quality': typeof AuthenticatedQualityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -227,7 +219,6 @@ export interface FileRoutesById {
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/vectorize': typeof AuthenticatedVectorizeRoute
-  '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
 }
@@ -254,7 +245,6 @@ export interface FileRouteTypes {
     | '/quality'
     | '/settings'
     | '/vectorize'
-    | '/api/generate-image'
     | '/g/$token'
     | '/admin/users'
   fileRoutesByTo: FileRoutesByTo
@@ -279,7 +269,6 @@ export interface FileRouteTypes {
     | '/quality'
     | '/settings'
     | '/vectorize'
-    | '/api/generate-image'
     | '/g/$token'
     | '/admin/users'
   id:
@@ -305,7 +294,6 @@ export interface FileRouteTypes {
     | '/_authenticated/quality'
     | '/_authenticated/settings'
     | '/_authenticated/vectorize'
-    | '/api/generate-image'
     | '/g/$token'
     | '/_authenticated/admin/users'
   fileRoutesById: FileRoutesById
@@ -314,7 +302,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ApiGenerateImageRoute: typeof ApiGenerateImageRoute
   GTokenRoute: typeof GTokenRoute
 }
 
@@ -467,13 +454,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVectorizeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/api/generate-image': {
-      id: '/api/generate-image'
-      path: '/api/generate-image'
-      fullPath: '/api/generate-image'
-      preLoaderRoute: typeof ApiGenerateImageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/g/$token': {
       id: '/g/$token'
       path: '/g/$token'
@@ -543,7 +523,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  ApiGenerateImageRoute: ApiGenerateImageRoute,
   GTokenRoute: GTokenRoute,
 }
 export const routeTree = rootRouteImport

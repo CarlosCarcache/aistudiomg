@@ -32,7 +32,7 @@ export function usePermissions(module: string) {
   });
 
   const can = (action: PermAction) => {
-    if (!data) return true; // mientras carga
+    if (!data) return false;
     if (data.isAdmin || !data.perm) return true; // sin restricciones definidas
     return data.perm[`can_${action}` as const];
   };

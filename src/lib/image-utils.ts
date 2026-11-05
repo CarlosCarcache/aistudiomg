@@ -1,4 +1,5 @@
 // Utilidades de imagen reutilizadas por todas las herramientas.
+import { generateStudioImage } from "./ai-image.functions";
 
 export type Format = "png" | "jpeg" | "webp" | "svg";
 
@@ -205,12 +206,6 @@ export async function downloadAs(dataUrl: string, format: Format, basename = "im
 
 // Llama al endpoint de generación/edición con IA.
 export async function aiImage(prompt: string, images?: string[]): Promise<string> {
-  const res = await fetch("/api/generate-image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, images }),
-  });
-  const data = (await res.json()) as { image?: string; error?: string };
-  if (!res.ok || !data.image) throw new Error(data.error ?? "Error con la IA");
-  return data.image;
+  const { image } = await generateStudioImage({ data: { prompt, images } });
+  return image;
 }

@@ -216,6 +216,7 @@ function applySharpen(ctx: CanvasRenderingContext2D, w: number, h: number, amoun
   const weights = [0, -k, 0, -k, 1 + 4 * k, -k, 0, -k, 0];
   const src = ctx.getImageData(0, 0, w, h);
   const out = ctx.createImageData(w, h);
+  out.data.set(src.data);
   const s = src.data, d = out.data;
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {

@@ -36,6 +36,20 @@
       "when": 1792546990063,
       "tag": "0004_shared_gallery_text_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793840735727,
+      "tag": "0005_verify_category_shares_and_enforce_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793840794247,
+      "tag": "0006_restore_scoped_share_functions",
+      "breakpoints": true
     }
   ]
 }

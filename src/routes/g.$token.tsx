@@ -56,14 +56,20 @@ function PublicGalleryPage() {
   const [form, setForm] = useState({ name: "", phone: "", notes: "" });
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(false);
+    setSelected(new Set());
     loadGallery({ data: { token } })
       .then((result) => {
+        if (!active) return;
         setImages(result.images);
         setUrls(result.urls);
       })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [token]);
+      .catch(() => { if (active) setError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token, loadGallery]);
 
   const selectedImages = useMemo(
     () => images.filter((i) => selected.has(i.id)),
