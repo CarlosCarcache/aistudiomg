@@ -65,14 +65,19 @@ function LoginPage() {
       <div className="brand-glow pointer-events-none absolute inset-x-0 top-0 h-[420px]" />
 
       <header className="relative z-10 flex items-center justify-between px-4 py-3">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
         <ThemeToggle />
       </header>
 
       <main className="relative z-10 mx-auto flex min-h-[calc(100vh-72px)] max-w-md flex-col justify-center px-4 pb-12">
-        <div className="mb-6 flex justify-center"><BrandLogo size="lg" /></div>
+        <div className="mb-6 flex justify-center">
+          <BrandLogo size="lg" />
+        </div>
 
         <div className="rounded-2xl border border-border bg-card/80 p-6 backdrop-blur brand-ring">
           <div className="mb-5 text-center">

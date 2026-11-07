@@ -13,11 +13,7 @@ export const chatsController = {
   },
 
   async createChat(input: NewChat): Promise<Chat> {
-    const { data, error } = await supabase
-      .from("chats")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("chats").insert(input).select().single();
     if (error) throw error;
     return data;
   },
@@ -33,11 +29,7 @@ export const chatsController = {
   },
 
   async addMessage(input: NewChatMessage): Promise<ChatMessage> {
-    const { data, error } = await supabase
-      .from("chat_messages")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("chat_messages").insert(input).select().single();
     if (error) throw error;
     return data;
   },

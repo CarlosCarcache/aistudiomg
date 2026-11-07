@@ -32,11 +32,7 @@ export const galleryController = {
   },
 
   async create(input: NewGalleryImage): Promise<GalleryImage> {
-    const { data, error } = await supabase
-      .from("gallery_images")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("gallery_images").insert(input).select().single();
     if (error) throw error;
     return data;
   },
@@ -72,9 +68,7 @@ export const galleryController = {
   // Convierte una ruta del almacén en una URL visible (las URLs externas pasan igual).
   async resolveUrl(value: string): Promise<string> {
     if (/^(https?:|data:|blob:)/.test(value)) return value;
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(value, YEAR);
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(value, YEAR);
     if (error || !data) return "";
     return data.signedUrl;
   },

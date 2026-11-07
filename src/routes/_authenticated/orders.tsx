@@ -20,12 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -95,14 +90,43 @@ function OrdersPage() {
       .list()
       .then(async (rows) => {
         setOrders(rows);
-        const paths = rows.flatMap((row) => Array.isArray(row.selected_images) ? row.selected_images.flatMap((item) => item && typeof item === "object" && !Array.isArray(item) && typeof item.image_url === "string" ? [item.image_url] : []) : []);
-        setSharedUrls(Object.fromEntries(await Promise.all([...new Set(paths)].map(async (path) => [path, await galleryController.resolveUrl(path)]))));
+        const paths = rows.flatMap((row) =>
+          Array.isArray(row.selected_images)
+            ? row.selected_images.flatMap((item) =>
+                item &&
+                typeof item === "object" &&
+                !Array.isArray(item) &&
+                typeof item.image_url === "string"
+                  ? [item.image_url]
+                  : [],
+              )
+            : [],
+        );
+        setSharedUrls(
+          Object.fromEntries(
+            await Promise.all(
+              [...new Set(paths)].map(async (path) => [
+                path,
+                await galleryController.resolveUrl(path),
+              ]),
+            ),
+          ),
+        );
       })
       .catch(() => toast.error("No se pudieron cargar los pedidos"))
       .finally(() => setLoading(false));
-    catalogController.listCategories().then(setCategories).catch(() => {});
-    clientsController.list().then(setClients).catch(() => {});
-    employeesController.list().then(setEmployees).catch(() => {});
+    catalogController
+      .listCategories()
+      .then(setCategories)
+      .catch(() => {});
+    clientsController
+      .list()
+      .then(setClients)
+      .catch(() => {});
+    employeesController
+      .list()
+      .then(setEmployees)
+      .catch(() => {});
   }, []);
 
   const grouped = useMemo(
@@ -285,11 +309,33 @@ function OrdersPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {Array.isArray(order.selected_images) && <div className="space-y-2">{order.selected_images.map((item, index) => {
-                if (!item || typeof item !== "object" || Array.isArray(item)) return null;
-                return <div key={index} className="flex items-center gap-3">{typeof item.image_url === "string" && sharedUrls[item.image_url] && <img src={sharedUrls[item.image_url]} alt={String(item.title ?? "Imagen")} className="h-14 w-14 rounded object-cover" />}<span className="min-w-0 flex-1 text-sm">{String(item.title ?? "Imagen")}</span><span className="text-sm font-medium">{formatMoney(Number(item.price ?? 0), order.currency)}</span></div>;
-              })}</div>}
-              {order.notes && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{order.notes}</p>}
+              {Array.isArray(order.selected_images) && (
+                <div className="space-y-2">
+                  {order.selected_images.map((item, index) => {
+                    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+                    return (
+                      <div key={index} className="flex items-center gap-3">
+                        {typeof item.image_url === "string" && sharedUrls[item.image_url] && (
+                          <img
+                            src={sharedUrls[item.image_url]}
+                            alt={String(item.title ?? "Imagen")}
+                            className="h-14 w-14 rounded object-cover"
+                          />
+                        )}
+                        <span className="min-w-0 flex-1 text-sm">
+                          {String(item.title ?? "Imagen")}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {formatMoney(Number(item.price ?? 0), order.currency)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {order.notes && (
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{order.notes}</p>
+              )}
               {order.description && (
                 <p className="text-sm text-muted-foreground">{order.description}</p>
               )}
@@ -312,7 +358,9 @@ function OrdersPage() {
                   </span>
                 )}
                 {order.category_id && (
-                  <span>Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}</span>
+                  <span>
+                    Categoría: {categories.find((c) => c.id === order.category_id)?.name ?? "—"}
+                  </span>
                 )}
                 {order.payment_method && <span>Pago: {order.payment_method}</span>}
                 {order.due_date && <span>Entrega: {order.due_date}</span>}
@@ -406,169 +454,213 @@ function OrdersPage() {
       >
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingOrder ? "Editar pedido" : "Nuevo pedido"}
-            </DialogTitle>
+            <DialogTitle>{editingOrder ? "Editar pedido" : "Nuevo pedido"}</DialogTitle>
           </DialogHeader>
           <Card className="border-0 shadow-none">
             <CardContent className="pt-0">
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Camisetas DTF - Cliente X"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Estado</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as OrderStatus)}>
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {statusLabel(s.value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select value={clientId || "none"} onValueChange={(v) => setClientId(v === "none" ? "" : v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin cliente</SelectItem>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Empleado que lo realiza</Label>
-              <Select value={employeeId || "none"} onValueChange={(v) => setEmployeeId(v === "none" ? "" : v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin empleado</SelectItem>
-                  {employees
-                    .filter((e) => e.active)
-                    .map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {[e.first_name, e.last_name].filter(Boolean).join(" ") || e.email || e.id}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price">Precio unitario</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={cur}
-                  onValueChange={(v) => setCur(v as CurrencyCode)}
-                  disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))}
-                >
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CURRENCIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input id="price" type="number" step="0.01" value={price}
-                  onChange={(e) => setPrice(e.target.value)} placeholder="0.00"
-                  disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Cantidad de productos</Label>
-              <Input id="quantity" type="number" min="1" step="1" value={quantity}
-                onChange={(e) => setQuantity(e.target.value)} placeholder="1"
-                disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))} />
-              {editingOrder && Array.isArray(editingOrder.selected_images) && (
-                <p className="text-xs text-muted-foreground">
-                  El precio de este pedido se conserva según las imágenes seleccionadas.
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Total: <span className="font-medium text-foreground">
-                  {formatMoney(orderTotal(price || 0, Number(quantity) || 1), cur)}
-                </span>
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Categoría (carpeta del portafolio)</Label>
-              <Select value={categoryId || "none"} onValueChange={(v) => setCategoryId(v === "none" ? "" : v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin categoría</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="payment_method">Método de pago</Label>
-              <Select value={paymentMethod || "none"} onValueChange={(v) => setPaymentMethod(v === "none" ? "" : v)}>
-                <SelectTrigger id="payment_method"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin especificar</SelectItem>
-                  <SelectItem value="Efectivo">Efectivo</SelectItem>
-                  <SelectItem value="Transferencia">Transferencia</SelectItem>
-                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
-                  <SelectItem value="Depósito">Depósito</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="due">Fecha de entrega</Label>
-              <Input
-                id="due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="desc">Descripción</Label>
-              <Textarea
-                id="desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Detalles del pedido, medidas, colores..."
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="notes">Notas</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notas adicionales del pedido..."
-              />
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex gap-2">
-                <Button type="submit" disabled={saving}>
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingOrder ? "Guardar cambios" : "Crear pedido"}
-                </Button>
-                {editingOrder && (
-                  <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-            </div>
-          </form>
+              <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Camisetas DTF - Cliente X"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Estado</Label>
+                  <Select value={status} onValueChange={(v) => setStatus(v as OrderStatus)}>
+                    <SelectTrigger id="status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {statusLabel(s.value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Select
+                    value={clientId || "none"}
+                    onValueChange={(v) => setClientId(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin cliente</SelectItem>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || c.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Empleado que lo realiza</Label>
+                  <Select
+                    value={employeeId || "none"}
+                    onValueChange={(v) => setEmployeeId(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin empleado</SelectItem>
+                      {employees
+                        .filter((e) => e.active)
+                        .map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {[e.first_name, e.last_name].filter(Boolean).join(" ") ||
+                              e.email ||
+                              e.id}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Precio unitario</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={cur}
+                      onValueChange={(v) => setCur(v as CurrencyCode)}
+                      disabled={Boolean(
+                        editingOrder && Array.isArray(editingOrder.selected_images),
+                      )}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="0.00"
+                      disabled={Boolean(
+                        editingOrder && Array.isArray(editingOrder.selected_images),
+                      )}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Cantidad de productos</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="1"
+                    disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))}
+                  />
+                  {editingOrder && Array.isArray(editingOrder.selected_images) && (
+                    <p className="text-xs text-muted-foreground">
+                      El precio de este pedido se conserva según las imágenes seleccionadas.
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Total:{" "}
+                    <span className="font-medium text-foreground">
+                      {formatMoney(orderTotal(price || 0, Number(quantity) || 1), cur)}
+                    </span>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Categoría (carpeta del portafolio)</Label>
+                  <Select
+                    value={categoryId || "none"}
+                    onValueChange={(v) => setCategoryId(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin categoría</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="payment_method">Método de pago</Label>
+                  <Select
+                    value={paymentMethod || "none"}
+                    onValueChange={(v) => setPaymentMethod(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger id="payment_method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin especificar</SelectItem>
+                      <SelectItem value="Efectivo">Efectivo</SelectItem>
+                      <SelectItem value="Transferencia">Transferencia</SelectItem>
+                      <SelectItem value="Tarjeta">Tarjeta</SelectItem>
+                      <SelectItem value="Depósito">Depósito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="due">Fecha de entrega</Label>
+                  <Input
+                    id="due"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="desc">Descripción</Label>
+                  <Textarea
+                    id="desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Detalles del pedido, medidas, colores..."
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="notes">Notas</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Notas adicionales del pedido..."
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={saving}>
+                      {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingOrder ? "Guardar cambios" : "Crear pedido"}
+                    </Button>
+                    {editingOrder && (
+                      <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>
+                        Cancelar
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </DialogContent>

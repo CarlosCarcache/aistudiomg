@@ -26,21 +26,16 @@ export type UpdateOrder = Database["public"]["Tables"]["orders"]["Update"];
 export type UpdateClient = Database["public"]["Tables"]["clients"]["Update"];
 export type UpdateEmployee = Database["public"]["Tables"]["employees"]["Update"];
 
-export type ProductCategory =
-  Database["public"]["Tables"]["product_categories"]["Row"];
-export type NewProductCategory =
-  Database["public"]["Tables"]["product_categories"]["Insert"];
-export type UpdateProductCategory =
-  Database["public"]["Tables"]["product_categories"]["Update"];
+export type ProductCategory = Database["public"]["Tables"]["product_categories"]["Row"];
+export type NewProductCategory = Database["public"]["Tables"]["product_categories"]["Insert"];
+export type UpdateProductCategory = Database["public"]["Tables"]["product_categories"]["Update"];
 
 export type Product = Database["public"]["Tables"]["products"]["Row"];
 export type NewProduct = Database["public"]["Tables"]["products"]["Insert"];
 export type UpdateProduct = Database["public"]["Tables"]["products"]["Update"];
 
 export type GalleryImage = Database["public"]["Tables"]["gallery_images"]["Row"];
-export type NewGalleryImage =
-  Database["public"]["Tables"]["gallery_images"]["Insert"];
-export type UpdateGalleryImage =
-  Database["public"]["Tables"]["gallery_images"]["Update"];
+export type NewGalleryImage = Database["public"]["Tables"]["gallery_images"]["Insert"];
+export type UpdateGalleryImage = Database["public"]["Tables"]["gallery_images"]["Update"];
 
 export type GalleryShare = Database["public"]["Tables"]["gallery_shares"]["Row"];

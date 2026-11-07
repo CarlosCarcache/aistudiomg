@@ -38,7 +38,13 @@ const MODULES = [
   { key: "portfolio", label: "Portafolio" },
 ] as const;
 type ModuleKey = (typeof MODULES)[number]["key"];
-type Perm = { module: ModuleKey; can_create: boolean; can_read: boolean; can_update: boolean; can_delete: boolean };
+type Perm = {
+  module: ModuleKey;
+  can_create: boolean;
+  can_read: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+};
 const ACTIONS = [
   { key: "can_create", label: "Crear" },
   { key: "can_read", label: "Ver" },
@@ -46,7 +52,13 @@ const ACTIONS = [
   { key: "can_delete", label: "Borrar" },
 ] as const;
 
-export function CreateUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function CreateUserDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const fn = useServerFn(createUser);
   const qc = useQueryClient();
   const [username, setUsername] = useState("");
@@ -60,7 +72,9 @@ export function CreateUserDialog({ open, onOpenChange }: { open: boolean; onOpen
       await fn({ data: { username, password, role } });
       toast.success("Usuario creado");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
-      setUsername(""); setPassword(""); setRole("viewer");
+      setUsername("");
+      setPassword("");
+      setRole("viewer");
       onOpenChange(false);
     } catch (e) {
       toast.error((e as Error).message || "Error al crear usuario");
@@ -72,11 +86,17 @@ export function CreateUserDialog({ open, onOpenChange }: { open: boolean; onOpen
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Nuevo usuario</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Nuevo usuario</DialogTitle>
+        </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>Usuario</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="usuario" />
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="usuario"
+            />
           </div>
           <div className="space-y-1">
             <Label>Contraseña (mín. 8)</Label>
@@ -85,7 +105,9 @@ export function CreateUserDialog({ open, onOpenChange }: { open: boolean; onOpen
           <div className="space-y-1">
             <Label>Rol</Label>
             <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="viewer">viewer</SelectItem>
                 <SelectItem value="editor">editor</SelectItem>
@@ -104,7 +126,13 @@ export function CreateUserDialog({ open, onOpenChange }: { open: boolean; onOpen
   );
 }
 
-export function PasswordDialog({ user, onClose }: { user: { id: string; name: string } | null; onClose: () => void }) {
+export function PasswordDialog({
+  user,
+  onClose,
+}: {
+  user: { id: string; name: string } | null;
+  onClose: () => void;
+}) {
   const fn = useServerFn(setUserPassword);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -125,17 +153,32 @@ export function PasswordDialog({ user, onClose }: { user: { id: string; name: st
   return (
     <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Nueva contraseña para {user?.name}</DialogTitle></DialogHeader>
-        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="mín. 8 caracteres" />
+        <DialogHeader>
+          <DialogTitle>Nueva contraseña para {user?.name}</DialogTitle>
+        </DialogHeader>
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="mín. 8 caracteres"
+        />
         <DialogFooter>
-          <Button onClick={submit} disabled={busy || password.length < 8}>Guardar</Button>
+          <Button onClick={submit} disabled={busy || password.length < 8}>
+            Guardar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-export function PermissionsDialog({ user, onClose }: { user: { id: string; name: string } | null; onClose: () => void }) {
+export function PermissionsDialog({
+  user,
+  onClose,
+}: {
+  user: { id: string; name: string } | null;
+  onClose: () => void;
+}) {
   const getFn = useServerFn(getUserPermissions);
   const saveFn = useServerFn(saveUserPermissions);
   const [perms, setPerms] = useState<Perm[]>([]);
@@ -184,7 +227,9 @@ export function PermissionsDialog({ user, onClose }: { user: { id: string; name:
   return (
     <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>Permisos de {user?.name}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Permisos de {user?.name}</DialogTitle>
+        </DialogHeader>
         {loading ? (
           <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
@@ -192,7 +237,11 @@ export function PermissionsDialog({ user, onClose }: { user: { id: string; name:
             <thead>
               <tr className="text-muted-foreground">
                 <th className="py-2 text-left font-medium">Apartado</th>
-                {ACTIONS.map((a) => <th key={a.key} className="py-2 font-medium">{a.label}</th>)}
+                {ACTIONS.map((a) => (
+                  <th key={a.key} className="py-2 font-medium">
+                    {a.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -201,7 +250,10 @@ export function PermissionsDialog({ user, onClose }: { user: { id: string; name:
                   <td className="py-2">{MODULES.find((m) => m.key === p.module)?.label}</td>
                   {ACTIONS.map((a) => (
                     <td key={a.key} className="py-2 text-center">
-                      <Checkbox checked={p[a.key]} onCheckedChange={(v) => toggle(p.module, a.key, v === true)} />
+                      <Checkbox
+                        checked={p[a.key]}
+                        onCheckedChange={(v) => toggle(p.module, a.key, v === true)}
+                      />
                     </td>
                   ))}
                 </tr>
@@ -210,7 +262,9 @@ export function PermissionsDialog({ user, onClose }: { user: { id: string; name:
           </table>
         )}
         <DialogFooter>
-          <Button onClick={save} disabled={busy || loading}>Guardar permisos</Button>
+          <Button onClick={save} disabled={busy || loading}>
+            Guardar permisos
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

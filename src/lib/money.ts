@@ -11,6 +11,9 @@ export function formatMoney(amount: number, currency?: string | null): string {
   return currency === "NIO" ? `C$ ${fixed}` : `$ ${fixed}`;
 }
 
-export function orderTotal(price: number | string | null | undefined, quantity?: number | null): number {
+export function orderTotal(
+  price: number | string | null | undefined,
+  quantity?: number | null,
+): number {
   return Number(price ?? 0) * Math.max(1, quantity ?? 1);
 }

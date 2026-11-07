@@ -15,12 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -44,8 +39,7 @@ export const Route = createFileRoute("/_authenticated/catalog")({
       { title: "Catálogo | AI Studio MG" },
       {
         name: "description",
-        content:
-          "Gestiona categorías y productos del estudio con precio, imagen y disponibilidad.",
+        content: "Gestiona categorías y productos del estudio con precio, imagen y disponibilidad.",
       },
       { property: "og:title", content: "Catálogo | AI Studio MG" },
       {
@@ -85,10 +79,7 @@ function CatalogPage() {
   };
 
   useEffect(() => {
-    Promise.all([
-      catalogController.listCategories(),
-      catalogController.listProducts(),
-    ])
+    Promise.all([catalogController.listCategories(), catalogController.listProducts()])
       .then(([c, p]) => {
         setCategories(c);
         setProducts(p);
@@ -174,10 +165,7 @@ function CatalogPage() {
     try {
       let imageUrl = prod.image_url.trim() || null;
       if (localImage) {
-        imageUrl = await catalogController.uploadProductImage(
-          user.id,
-          localImage.file,
-        );
+        imageUrl = await catalogController.uploadProductImage(user.id, localImage.file);
       }
       const created = await catalogController.createProduct({
         user_id: user.id,
@@ -459,7 +447,7 @@ function CatalogPage() {
                   <div>
                     <h3 className="font-medium">{p.name}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {p.category_id ? catName_[p.category_id] ?? "—" : "Sin categoría"}
+                      {p.category_id ? (catName_[p.category_id] ?? "—") : "Sin categoría"}
                     </p>
                   </div>
                   <span className="font-semibold">
@@ -467,9 +455,7 @@ function CatalogPage() {
                   </span>
                 </div>
                 {p.description && (
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {p.description}
-                  </p>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
                 )}
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center gap-2 text-sm">

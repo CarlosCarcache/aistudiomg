@@ -11,12 +11,7 @@ import { EmptyState } from "@/views/EmptyState";
 import { galleryController } from "@/controllers/gallery.controller";
 import type { GalleryImage, Order, ProductCategory } from "@/models/types";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/portfolio")({
   component: PortfolioPage,
@@ -25,8 +20,7 @@ export const Route = createFileRoute("/_authenticated/portfolio")({
       { title: "Portafolio | AI Studio MG" },
       {
         name: "description",
-        content:
-          "Galería pública del estudio con los trabajos marcados como portafolio.",
+        content: "Galería pública del estudio con los trabajos marcados como portafolio.",
       },
       { property: "og:title", content: "Portafolio | AI Studio MG" },
       {
@@ -88,10 +82,19 @@ function CategoryFolders({
   const [open, setOpen] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<GalleryImage | null>(null);
   useEffect(() => {
-    catalogController.listCategories().then(setCats).catch(() => {});
-    ordersController.list().then(setOrders).catch(() => {});
+    catalogController
+      .listCategories()
+      .then(setCats)
+      .catch(() => {});
+    ordersController
+      .list()
+      .then(setOrders)
+      .catch(() => {});
   }, []);
-  const folders = [...cats.map((c) => ({ id: c.id, name: c.name })), { id: "none", name: "Sin categoría" }];
+  const folders = [
+    ...cats.map((c) => ({ id: c.id, name: c.name })),
+    { id: "none", name: "Sin categoría" },
+  ];
   const inFolder = (id: string) =>
     orders.filter((o) => (id === "none" ? !o.category_id : o.category_id === id));
   const current = open ? folders.find((f) => f.id === open) : null;
@@ -137,14 +140,18 @@ function CategoryFolders({
           )}
           {currentOrders.length === 0 ? (
             currentImages.length === 0 && (
-              <p className="text-sm text-muted-foreground">Esta carpeta no tiene imágenes ni pedidos.</p>
+              <p className="text-sm text-muted-foreground">
+                Esta carpeta no tiene imágenes ni pedidos.
+              </p>
             )
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {currentOrders.map((o) => (
                 <Card key={o.id} className="p-3 space-y-1">
                   <p className="font-medium">{o.title}</p>
-                  {o.description && <p className="text-xs text-muted-foreground">{o.description}</p>}
+                  {o.description && (
+                    <p className="text-xs text-muted-foreground">{o.description}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {o.price != null
                       ? `${formatMoney(Number(o.price), o.currency)} × ${o.quantity ?? 1} = ${formatMoney(orderTotal(o.price, o.quantity), o.currency)}`
@@ -158,8 +165,11 @@ function CategoryFolders({
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {folders.map((f) => (
-            <button key={f.id} onClick={() => setOpen(f.id)}
-              className="flex flex-col items-center gap-2 rounded-lg border bg-card p-4 text-center hover:bg-accent transition-colors">
+            <button
+              key={f.id}
+              onClick={() => setOpen(f.id)}
+              className="flex flex-col items-center gap-2 rounded-lg border bg-card p-4 text-center hover:bg-accent transition-colors"
+            >
               <Folder className="h-10 w-10 text-primary" />
               <span className="text-sm font-medium">{f.name}</span>
               <span className="text-xs text-muted-foreground">
@@ -170,10 +180,7 @@ function CategoryFolders({
           ))}
         </div>
       )}
-      <Dialog
-        open={!!previewImage}
-        onOpenChange={(isOpen) => !isOpen && setPreviewImage(null)}
-      >
+      <Dialog open={!!previewImage} onOpenChange={(isOpen) => !isOpen && setPreviewImage(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{previewImage?.title}</DialogTitle>

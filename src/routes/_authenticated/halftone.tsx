@@ -36,6 +36,16 @@ import { removeBackgroundClean } from "@/lib/remove-bg";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/halftone")({
+  head: () => ({
+    meta: [
+      { title: "Semitono | AI Studio MG" },
+      { name: "description", content: "Prepara diseños de semitono para impresión." },
+      { property: "og:title", content: "Semitono | AI Studio MG" },
+      { property: "og:description", content: "Prepara diseños de semitono para impresión." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: HalftonePage,
 });
 

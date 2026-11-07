@@ -112,7 +112,11 @@ function Dashboard() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <PageHeader
-        title={<>Bienvenido a tu <span className="brand-text">estudio</span></>}
+        title={
+          <>
+            Bienvenido a tu <span className="brand-text">estudio</span>
+          </>
+        }
         description="Control de proyectos, clientes, entregas y ventas."
       />
 
@@ -165,7 +169,9 @@ function Dashboard() {
             >
               <div
                 className="mb-3 grid h-10 w-10 place-items-center rounded-xl text-primary-foreground"
-                style={{ background: "linear-gradient(135deg, var(--brand-pink), var(--brand-purple))" }}
+                style={{
+                  background: "linear-gradient(135deg, var(--brand-pink), var(--brand-purple))",
+                }}
               >
                 <q.icon className="h-5 w-5" />
               </div>

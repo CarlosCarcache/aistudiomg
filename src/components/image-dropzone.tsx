@@ -58,7 +58,12 @@ export function ImageDropzone({
 
   if (preview) {
     return (
-      <div className={cn("relative overflow-hidden rounded-xl border border-border bg-card", className)}>
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-xl border border-border bg-card",
+          className,
+        )}
+      >
         <img src={preview} alt="preview" className="max-h-[420px] w-full object-contain" />
         {onClear && (
           <Button

@@ -8,6 +8,16 @@ import { downloadDataUrl, loadImage } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/crop")({
+  head: () => ({
+    meta: [
+      { title: "Recortes | AI Studio MG" },
+      { name: "description", content: "Recorta tus diseños con formas o selección libre." },
+      { property: "og:title", content: "Recortes | AI Studio MG" },
+      { property: "og:description", content: "Recorta tus diseños con formas o selección libre." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CropPage,
 });
 
@@ -122,7 +132,8 @@ function CropPage() {
   function onUp(e: React.PointerEvent) {
     if (!drawing.current) return;
     drawing.current = false;
-    try { (e.target as Element).releasePointerCapture(e.pointerId); } catch {}
+    const target = e.target as Element;
+    if (target.hasPointerCapture(e.pointerId)) target.releasePointerCapture(e.pointerId);
     redraw();
   }
 
@@ -145,11 +156,15 @@ function CropPage() {
       if (pts.length < 3) return toast.error("Dibuja el recorte primero");
       const xs = pts.map((p) => p.x * sx);
       const ys = pts.map((p) => p.y * sy);
-      const minX = Math.min(...xs), maxX = Math.max(...xs);
-      const minY = Math.min(...ys), maxY = Math.max(...ys);
-      const w = maxX - minX, h = maxY - minY;
+      const minX = Math.min(...xs),
+        maxX = Math.max(...xs);
+      const minY = Math.min(...ys),
+        maxY = Math.max(...ys);
+      const w = maxX - minX,
+        h = maxY - minY;
       const out = document.createElement("canvas");
-      out.width = w; out.height = h;
+      out.width = w;
+      out.height = h;
       const ctx = out.getContext("2d")!;
       ctx.beginPath();
       ctx.moveTo(pts[0].x * sx - minX, pts[0].y * sy - minY);
@@ -159,7 +174,8 @@ function CropPage() {
       ctx.drawImage(img, -minX, -minY);
       downloadDataUrl(out.toDataURL("image/png"), `recorte-${Date.now()}.png`);
     } else {
-      const s = startRef.current, e = endRef.current;
+      const s = startRef.current,
+        e = endRef.current;
       if (!s || !e) return toast.error("Dibuja el recorte primero");
       const x = Math.min(s.x, e.x) * sx;
       const y = Math.min(s.y, e.y) * sy;
@@ -167,7 +183,8 @@ function CropPage() {
       const h = Math.abs(e.y - s.y) * sy;
       if (w < 2 || h < 2) return toast.error("Área muy pequeña");
       const out = document.createElement("canvas");
-      out.width = w; out.height = h;
+      out.width = w;
+      out.height = h;
       const ctx = out.getContext("2d")!;
       if (mode === "circle") {
         ctx.beginPath();
@@ -183,25 +200,52 @@ function CropPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Recortes" description="Elige una forma o dibuja a mano libre siguiendo el cursor." />
+      <PageHeader
+        title="Recortes"
+        description="Elige una forma o dibuja a mano libre siguiendo el cursor."
+      />
       {!src ? (
         <ImageDropzone onFiles={(f) => setSrc(f[0].dataUrl)} />
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Button variant={mode === "free" ? "default" : "secondary"} onClick={() => { setMode("free"); clearShape(); }}>
+            <Button
+              variant={mode === "free" ? "default" : "secondary"}
+              onClick={() => {
+                setMode("free");
+                clearShape();
+              }}
+            >
               <Pencil className="h-4 w-4" /> Libre
             </Button>
-            <Button variant={mode === "rect" ? "default" : "secondary"} onClick={() => { setMode("rect"); clearShape(); }}>
+            <Button
+              variant={mode === "rect" ? "default" : "secondary"}
+              onClick={() => {
+                setMode("rect");
+                clearShape();
+              }}
+            >
               <Square className="h-4 w-4" /> Cuadrado
             </Button>
-            <Button variant={mode === "circle" ? "default" : "secondary"} onClick={() => { setMode("circle"); clearShape(); }}>
+            <Button
+              variant={mode === "circle" ? "default" : "secondary"}
+              onClick={() => {
+                setMode("circle");
+                clearShape();
+              }}
+            >
               <Circle className="h-4 w-4" /> Círculo
             </Button>
             <Button variant="ghost" onClick={clearShape}>
               <RotateCcw className="h-4 w-4" /> Limpiar
             </Button>
-            <Button variant="outline" onClick={() => { setSrc(null); clearShape(); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSrc(null);
+                clearShape();
+              }}
+            >
               <Crop className="h-4 w-4" /> Otra imagen
             </Button>
             <Button onClick={handleSave} className="ml-auto">

@@ -7,6 +7,9 @@ describe("shared gallery orders", () => {
     assert.equal(sharedImageTotal([{ price: 100 }, { price: 250 }]), 350);
   });
   it("rejects selections without images", () => {
-    assert.equal(sharedOrderSchema.safeParse({ name: "Cliente", phone: "", notes: "", imageIds: [] }).success, false);
+    assert.equal(
+      sharedOrderSchema.safeParse({ name: "Cliente", phone: "", notes: "", imageIds: [] }).success,
+      false,
+    );
   });
 });

@@ -29,10 +29,7 @@ export const catalogController = {
     return data;
   },
 
-  async updateCategory(
-    id: string,
-    input: UpdateProductCategory,
-  ): Promise<ProductCategory> {
+  async updateCategory(id: string, input: UpdateProductCategory): Promise<ProductCategory> {
     const { data, error } = await supabase
       .from("product_categories")
       .update(input)
@@ -44,10 +41,7 @@ export const catalogController = {
   },
 
   async removeCategory(id: string) {
-    const { error } = await supabase
-      .from("product_categories")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("product_categories").delete().eq("id", id);
     if (error) throw error;
   },
 
@@ -76,20 +70,14 @@ export const catalogController = {
     return Promise.all(
       products.map(async (p) => {
         if (!p.image_url || /^(https?:|data:)/.test(p.image_url)) return p;
-        const { data } = await supabase.storage
-          .from("products")
-          .createSignedUrl(p.image_url, 3600);
+        const { data } = await supabase.storage.from("products").createSignedUrl(p.image_url, 3600);
         return { ...p, image_url: data?.signedUrl ?? p.image_url };
       }),
     );
   },
 
   async createProduct(input: NewProduct): Promise<Product> {
-    const { data, error } = await supabase
-      .from("products")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("products").insert(input).select().single();
     if (error) throw error;
     return data;
   },

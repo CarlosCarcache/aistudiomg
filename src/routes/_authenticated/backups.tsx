@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/backups")({
         content: "Descarga respaldos de tus datos en formato JSON.",
       },
       { property: "og:title", content: "Copias de seguridad | AI Studio MG" },
+      { property: "og:description", content: "Descarga respaldos de tus datos en formato JSON." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -75,10 +76,7 @@ function BackupsPage() {
         if (error) throw error;
         backup[t.key] = data;
       }
-      downloadJson(
-        `respaldo-completo-${new Date().toISOString().slice(0, 10)}.json`,
-        backup,
-      );
+      downloadJson(`respaldo-completo-${new Date().toISOString().slice(0, 10)}.json`, backup);
       toast.success("Respaldo completo descargado");
     } catch {
       toast.error("No se pudo generar el respaldo completo");
@@ -110,8 +108,8 @@ function BackupsPage() {
             Descargar todo (JSON)
           </Button>
           <p className="text-sm text-muted-foreground">
-            Incluye clientes, empleados, pedidos, productos, categorías,
-            proyectos y galería en un solo archivo.
+            Incluye clientes, empleados, pedidos, productos, categorías, proyectos y galería en un
+            solo archivo.
           </p>
         </CardContent>
       </Card>
@@ -146,8 +144,8 @@ function BackupsPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Nota: los archivos de imagen no se incluyen en el JSON; el respaldo
-        guarda los datos y las referencias de cada imagen.
+        Nota: los archivos de imagen no se incluyen en el JSON; el respaldo guarda los datos y las
+        referencias de cada imagen.
       </p>
     </div>
   );

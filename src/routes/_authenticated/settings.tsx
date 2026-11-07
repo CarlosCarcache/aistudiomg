@@ -8,6 +8,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/settings")({
+  head: () => ({
+    meta: [
+      { title: "Configuración | AI Studio MG" },
+      { name: "description", content: "Gestiona tu perfil en AI Studio MG." },
+      { property: "og:title", content: "Configuración | AI Studio MG" },
+      { property: "og:description", content: "Gestiona tu perfil en AI Studio MG." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SettingsPage,
 });
 

@@ -13,11 +13,7 @@ export const clientsController = {
   },
 
   async create(input: NewClient): Promise<Client> {
-    const { data, error } = await supabase
-      .from("clients")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("clients").insert(input).select().single();
     if (error) throw error;
     return data;
   },

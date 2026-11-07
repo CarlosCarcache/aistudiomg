@@ -15,14 +15,22 @@ import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [
-    { title: "AI Studio MG | Estudio de diseño" },
-    { name: "description", content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG." },
-    { property: "og:title", content: "AI Studio MG | Estudio de diseño" },
-    { property: "og:description", content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary" },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "AI Studio MG | Estudio de diseño" },
+      {
+        name: "description",
+        content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG.",
+      },
+      { property: "og:title", content: "AI Studio MG | Estudio de diseño" },
+      {
+        property: "og:description",
+        content: "Tu espacio de diseño, proyectos y pedidos en AI Studio MG.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   beforeLoad: () => {
     throw redirect({ to: "/dashboard" });
   },
@@ -30,12 +38,36 @@ export const Route = createFileRoute("/")({
 });
 
 const features = [
-  { icon: Wand2, title: "Vectorización", desc: "Convierte imágenes raster en SVG, EPS o PDF listos para imprimir." },
-  { icon: ImagePlus, title: "Generación con IA", desc: "Crea logos, íconos e imanes desde un prompt en cualquier formato." },
-  { icon: Scissors, title: "Edición avanzada", desc: "Quita fondos, recorta, mejora colores y reconstruye detalles." },
-  { icon: MessageSquare, title: "Chat interactivo", desc: "Pide mejoras específicas a la IA mientras iteras tu diseño." },
-  { icon: FolderKanban, title: "Proyectos", desc: "Guarda tus diseños y reutilízalos con nuevos clientes." },
-  { icon: History, title: "Antes & después", desc: "Compara versiones y consulta tu historial de chats." },
+  {
+    icon: Wand2,
+    title: "Vectorización",
+    desc: "Convierte imágenes raster en SVG, EPS o PDF listos para imprimir.",
+  },
+  {
+    icon: ImagePlus,
+    title: "Generación con IA",
+    desc: "Crea logos, íconos e imanes desde un prompt en cualquier formato.",
+  },
+  {
+    icon: Scissors,
+    title: "Edición avanzada",
+    desc: "Quita fondos, recorta, mejora colores y reconstruye detalles.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Chat interactivo",
+    desc: "Pide mejoras específicas a la IA mientras iteras tu diseño.",
+  },
+  {
+    icon: FolderKanban,
+    title: "Proyectos",
+    desc: "Guarda tus diseños y reutilízalos con nuevos clientes.",
+  },
+  {
+    icon: History,
+    title: "Antes & después",
+    desc: "Compara versiones y consulta tu historial de chats.",
+  },
 ];
 
 function Landing() {
@@ -65,8 +97,7 @@ function Landing() {
               Estudio de diseño asistido por IA
             </div>
             <h1 className="text-balance text-5xl font-semibold tracking-tight md:text-6xl">
-              Diseña, vectoriza y crea{" "}
-              <span className="brand-text">en un solo lugar</span>
+              Diseña, vectoriza y crea <span className="brand-text">en un solo lugar</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-balance text-muted-foreground md:text-lg">
               AI Studio MG combina vectorización, generación con IA, edición de imágenes y chat
@@ -95,8 +126,7 @@ function Landing() {
                 <div
                   className="mb-4 grid h-10 w-10 place-items-center rounded-xl text-primary-foreground"
                   style={{
-                    background:
-                      "linear-gradient(135deg, var(--brand-pink), var(--brand-purple))",
+                    background: "linear-gradient(135deg, var(--brand-pink), var(--brand-purple))",
                   }}
                 >
                   <f.icon className="h-5 w-5" />

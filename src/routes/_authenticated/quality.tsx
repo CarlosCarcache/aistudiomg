@@ -10,6 +10,16 @@ import { aiImage, downloadDataUrl, loadImage } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/quality")({
+  head: () => ({
+    meta: [
+      { title: "Calidad de imagen | AI Studio MG" },
+      { name: "description", content: "Ajusta y mejora la calidad de tus imágenes." },
+      { property: "og:title", content: "Calidad de imagen | AI Studio MG" },
+      { property: "og:description", content: "Ajusta y mejora la calidad de tus imágenes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: QualityPage,
 });
 
@@ -110,27 +120,81 @@ function QualityPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Mejorar calidad" description="Ajustes manuales + chat IA con comparativa antes/después." />
+      <PageHeader
+        title="Mejorar calidad"
+        description="Ajustes manuales + chat IA con comparativa antes/después."
+      />
 
       {!src ? (
-        <ImageDropzone onFiles={(f) => { setSrc(f[0].dataUrl); setWorking(f[0].dataUrl); setMessages([]); }} />
+        <ImageDropzone
+          onFiles={(f) => {
+            setSrc(f[0].dataUrl);
+            setWorking(f[0].dataUrl);
+            setMessages([]);
+          }}
+        />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
           <div className="space-y-4">
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-              <Row label="Brillo" value={brightness}><Slider value={[brightness]} min={-50} max={50} step={1} onValueChange={(v) => setBrightness(v[0])} /></Row>
-              <Row label="Contraste" value={contrast.toFixed(2)}><Slider value={[contrast]} min={0.5} max={2} step={0.05} onValueChange={(v) => setContrast(v[0])} /></Row>
-              <Row label="Saturación" value={saturation.toFixed(2)}><Slider value={[saturation]} min={0} max={2} step={0.05} onValueChange={(v) => setSaturation(v[0])} /></Row>
-              <Row label="Nitidez" value={sharpen}><Slider value={[sharpen]} min={0} max={5} step={1} onValueChange={(v) => setSharpen(v[0])} /></Row>
+              <Row label="Brillo" value={brightness}>
+                <Slider
+                  value={[brightness]}
+                  min={-50}
+                  max={50}
+                  step={1}
+                  onValueChange={(v) => setBrightness(v[0])}
+                />
+              </Row>
+              <Row label="Contraste" value={contrast.toFixed(2)}>
+                <Slider
+                  value={[contrast]}
+                  min={0.5}
+                  max={2}
+                  step={0.05}
+                  onValueChange={(v) => setContrast(v[0])}
+                />
+              </Row>
+              <Row label="Saturación" value={saturation.toFixed(2)}>
+                <Slider
+                  value={[saturation]}
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  onValueChange={(v) => setSaturation(v[0])}
+                />
+              </Row>
+              <Row label="Nitidez" value={sharpen}>
+                <Slider
+                  value={[sharpen]}
+                  min={0}
+                  max={5}
+                  step={1}
+                  onValueChange={(v) => setSharpen(v[0])}
+                />
+              </Row>
             </div>
 
-            <Button onClick={() => handleAiEnhance().catch(() => {})} disabled={loading} className="w-full">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            <Button
+              onClick={() => handleAiEnhance().catch(() => {})}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
               Mejorar con IA
             </Button>
             {isEdited && (
-              <Button onClick={() => setShowCompare((v) => !v)} variant="outline" className="w-full">
-                <GitCompare className="h-4 w-4" /> {showCompare ? "Ocultar antes/después" : "Ver antes/después"}
+              <Button
+                onClick={() => setShowCompare((v) => !v)}
+                variant="outline"
+                className="w-full"
+              >
+                <GitCompare className="h-4 w-4" />{" "}
+                {showCompare ? "Ocultar antes/después" : "Ver antes/después"}
               </Button>
             )}
             <Button onClick={handleDownload} variant="secondary" className="w-full">
@@ -140,19 +204,35 @@ function QualityPage() {
             <div className="rounded-xl border border-border bg-card p-3">
               <p className="mb-2 text-sm font-medium">Chat de mejoras</p>
               <div className="mb-2 max-h-56 space-y-2 overflow-y-auto text-sm">
-                {messages.length === 0 && <p className="text-xs text-muted-foreground">Pide mejoras específicas (ej: "más nitidez en los ojos", "color piel más natural", "quita el grano").</p>}
+                {messages.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Pide mejoras específicas (ej: "más nitidez en los ojos", "color piel más
+                    natural", "quita el grano").
+                  </p>
+                )}
                 {messages.map((m, i) => (
                   <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-                    <span className={`inline-block max-w-[90%] whitespace-pre-wrap rounded-lg px-2 py-1 text-xs ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                    <span
+                      className={`inline-block max-w-[90%] whitespace-pre-wrap rounded-lg px-2 py-1 text-xs ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                    >
                       {m.content}
                     </span>
                   </div>
                 ))}
               </div>
               <div className="flex gap-2">
-                <Textarea rows={2} value={chat} onChange={(e) => setChat(e.target.value)} placeholder="Pide una mejora..." />
+                <Textarea
+                  rows={2}
+                  value={chat}
+                  onChange={(e) => setChat(e.target.value)}
+                  placeholder="Pide una mejora..."
+                />
                 <Button size="icon" onClick={handleSend} disabled={loading || !chat.trim()}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -164,13 +244,22 @@ function QualityPage() {
                 <BeforeAfter before={src!} after={working!} split={split} />
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>Antes</span>
-                  <Slider value={[split]} min={0} max={100} step={1} onValueChange={(v) => setSplit(v[0])} />
+                  <Slider
+                    value={[split]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setSplit(v[0])}
+                  />
                   <span>Después</span>
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
               </>
             ) : (
-              <canvas ref={canvasRef} className="mx-auto block max-h-[560px] max-w-full rounded-xl bg-white" />
+              <canvas
+                ref={canvasRef}
+                className="mx-auto block max-h-[560px] max-w-full rounded-xl bg-white"
+              />
             )}
           </div>
         </div>
@@ -193,13 +282,25 @@ function BeforeAfter({ before, after, split }: { before: string; after: string; 
         className="pointer-events-none absolute inset-y-0 w-0.5 bg-primary shadow-[0_0_8px] shadow-primary"
         style={{ left: `${split}%` }}
       />
-      <span className="absolute left-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">Antes</span>
-      <span className="absolute right-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">Después</span>
+      <span className="absolute left-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+        Antes
+      </span>
+      <span className="absolute right-2 top-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+        Después
+      </span>
     </div>
   );
 }
 
-function Row({ label, value, children }: { label: string; value: number | string; children: React.ReactNode }) {
+function Row({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value: number | string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm">
@@ -217,14 +318,16 @@ function applySharpen(ctx: CanvasRenderingContext2D, w: number, h: number, amoun
   const src = ctx.getImageData(0, 0, w, h);
   const out = ctx.createImageData(w, h);
   out.data.set(src.data);
-  const s = src.data, d = out.data;
+  const s = src.data,
+    d = out.data;
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       for (let c = 0; c < 3; c++) {
         let sum = 0;
-        for (let ky = -1; ky <= 1; ky++) for (let kx = -1; kx <= 1; kx++) {
-          sum += s[((y + ky) * w + (x + kx)) * 4 + c] * weights[(ky + 1) * 3 + (kx + 1)];
-        }
+        for (let ky = -1; ky <= 1; ky++)
+          for (let kx = -1; kx <= 1; kx++) {
+            sum += s[((y + ky) * w + (x + kx)) * 4 + c] * weights[(ky + 1) * 3 + (kx + 1)];
+          }
         d[(y * w + x) * 4 + c] = Math.max(0, Math.min(255, sum));
       }
       d[(y * w + x) * 4 + 3] = s[(y * w + x) * 4 + 3];

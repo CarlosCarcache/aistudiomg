@@ -14,6 +14,16 @@ import {
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/chat")({
+  head: () => ({
+    meta: [
+      { title: "Chat de imágenes | AI Studio MG" },
+      { name: "description", content: "Crea imágenes para tus diseños con AI Studio MG." },
+      { property: "og:title", content: "Chat de imágenes | AI Studio MG" },
+      { property: "og:description", content: "Crea imágenes para tus diseños con AI Studio MG." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ChatPage,
 });
 
@@ -197,7 +207,9 @@ function ChatPage() {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => { if (msg.image) void handleDownload(msg.image); }}
+                        onClick={() => {
+                          if (msg.image) void handleDownload(msg.image);
+                        }}
                       >
                         <Download className="h-4 w-4" />
                         Descargar {format.toUpperCase()}

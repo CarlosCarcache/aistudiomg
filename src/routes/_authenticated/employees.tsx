@@ -1,16 +1,7 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  BadgeCheck,
-  Loader2,
-  Pencil,
-  Plus,
-  Save,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+import { BadgeCheck, Loader2, Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -23,12 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -45,8 +31,7 @@ export const Route = createFileRoute("/_authenticated/employees")({
       { title: "Empleados | AI Studio MG" },
       {
         name: "description",
-        content:
-          "Alta y baja de personal del estudio con cargo, contacto y estado activo.",
+        content: "Alta y baja de personal del estudio con cargo, contacto y estado activo.",
       },
       { property: "og:title", content: "Empleados | AI Studio MG" },
       {
@@ -86,8 +71,7 @@ function EmployeesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const set = (k: keyof typeof emptyForm, v: string) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const reset = () => {
     setForm(emptyForm);
@@ -309,58 +293,60 @@ function EmployeesPage() {
                       No se encontraron empleados con ese nombre.
                     </TableCell>
                   </TableRow>
-                ) : filteredRows.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="font-medium">
-                      {e.first_name} {e.last_name ?? ""}
-                    </TableCell>
-                    <TableCell>
-                      {e.role_title ? (
-                        <Badge variant="secondary">{e.role_title}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {e.email ?? e.phone ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={e.active}
-                        onCheckedChange={() => toggleActive(e)}
-                        aria-label="Activo"
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Editar"
-                        onClick={() => {
-                          setEditingId(e.id);
-                          setForm({
-                            first_name: e.first_name ?? "",
-                            last_name: e.last_name ?? "",
-                            role_title: e.role_title ?? "",
-                            email: e.email ?? "",
-                            phone: e.phone ?? "",
-                          });
-                          setEmployeeDialogOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        aria-label="Eliminar"
-                        onClick={() => remove(e.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : (
+                  filteredRows.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">
+                        {e.first_name} {e.last_name ?? ""}
+                      </TableCell>
+                      <TableCell>
+                        {e.role_title ? (
+                          <Badge variant="secondary">{e.role_title}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {e.email ?? e.phone ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={e.active}
+                          onCheckedChange={() => toggleActive(e)}
+                          aria-label="Activo"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Editar"
+                          onClick={() => {
+                            setEditingId(e.id);
+                            setForm({
+                              first_name: e.first_name ?? "",
+                              last_name: e.last_name ?? "",
+                              role_title: e.role_title ?? "",
+                              email: e.email ?? "",
+                              phone: e.phone ?? "",
+                            });
+                            setEmployeeDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Eliminar"
+                          onClick={() => remove(e.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

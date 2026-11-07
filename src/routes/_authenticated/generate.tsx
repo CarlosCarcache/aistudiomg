@@ -4,12 +4,28 @@ import { Sparkles, Download, Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageDropzone, type DroppedFile } from "@/components/image-dropzone";
 import { aiImage, downloadAs, type Format } from "@/lib/image-utils";
 import { PageHeader } from "@/views/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/generate")({
+  head: () => ({
+    meta: [
+      { title: "Generar imágenes | AI Studio MG" },
+      { name: "description", content: "Genera y edita imágenes para tus proyectos." },
+      { property: "og:title", content: "Generar imágenes | AI Studio MG" },
+      { property: "og:description", content: "Genera y edita imágenes para tus proyectos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: GeneratePage,
 });
 
@@ -68,7 +84,10 @@ function GeneratePage() {
           {refs.length > 0 && (
             <div className="grid grid-cols-4 gap-2">
               {refs.map((r, i) => (
-                <div key={i} className="relative aspect-square overflow-hidden rounded-lg border border-border">
+                <div
+                  key={i}
+                  className="relative aspect-square overflow-hidden rounded-lg border border-border"
+                >
                   <img src={r.dataUrl} alt="" className="h-full w-full object-cover" />
                   <button
                     onClick={() => setRefs((p) => p.filter((_, j) => j !== i))}
@@ -90,7 +109,11 @@ function GeneratePage() {
 
           <div className="flex gap-2">
             <Button onClick={handleGenerate} disabled={loading} className="flex-1">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
               Generar
             </Button>
             <Button onClick={handleEditCurrent} disabled={loading || !result} variant="secondary">

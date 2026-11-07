@@ -27,7 +27,13 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageDropzone, fileToDataUrl } from "@/components/image-dropzone";
 import { downloadDataUrl, loadImage, type Format } from "@/lib/image-utils";
@@ -35,6 +41,19 @@ import { PageHeader } from "@/views/PageHeader";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/editor")({
+  head: () => ({
+    meta: [
+      { title: "Editor | AI Studio MG" },
+      { name: "description", content: "Edita tus diseños por capas y exporta el resultado." },
+      { property: "og:title", content: "Editor | AI Studio MG" },
+      {
+        property: "og:description",
+        content: "Edita tus diseños por capas y exporta el resultado.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: EditorPage,
 });
 
@@ -87,7 +106,10 @@ function EditorPage() {
   const startPt = useRef<{ x: number; y: number } | null>(null);
   const lastPt = useRef<{ x: number; y: number } | null>(null);
 
-  const activeLayer = useMemo(() => layers.find((l) => l.id === activeId) ?? null, [layers, activeId]);
+  const activeLayer = useMemo(
+    () => layers.find((l) => l.id === activeId) ?? null,
+    [layers, activeId],
+  );
 
   // Redibuja el canvas principal componiendo todas las capas.
   const composite = useCallback(() => {
@@ -319,7 +341,13 @@ function EditorPage() {
     const url = await fileToDataUrl(file);
     const img = await loadImage(url);
     const c = newCanvas(size.w, size.h);
-    c.getContext("2d")!.drawImage(img, 0, 0, Math.min(img.width, size.w), Math.min(img.height, size.h));
+    c.getContext("2d")!.drawImage(
+      img,
+      0,
+      0,
+      Math.min(img.width, size.w),
+      Math.min(img.height, size.h),
+    );
     const l: Layer = {
       id: crypto.randomUUID(),
       name: file.name,
@@ -388,7 +416,15 @@ function EditorPage() {
         else undo();
       }
       if (!e.ctrlKey && !e.metaKey) {
-        const map: Record<string, Tool> = { v: "move", b: "brush", e: "eraser", r: "rect", o: "ellipse", t: "text", i: "eyedrop" };
+        const map: Record<string, Tool> = {
+          v: "move",
+          b: "brush",
+          e: "eraser",
+          r: "rect",
+          o: "ellipse",
+          t: "text",
+          i: "eyedrop",
+        };
         if (map[e.key]) setTool(map[e.key]);
       }
     }
@@ -399,8 +435,14 @@ function EditorPage() {
   if (!size) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
-        <PageHeader title="Editor de imagen" description="Mini editor con capas, herramientas, ajustes y exportación." />
-        <ImageDropzone onFiles={(f) => handleInitial(f[0].dataUrl)} hint="Arrastra una imagen para empezar a editar" />
+        <PageHeader
+          title="Editor de imagen"
+          description="Mini editor con capas, herramientas, ajustes y exportación."
+        />
+        <ImageDropzone
+          onFiles={(f) => handleInitial(f[0].dataUrl)}
+          hint="Arrastra una imagen para empezar a editar"
+        />
       </div>
     );
   }
@@ -423,7 +465,14 @@ function EditorPage() {
                 <SelectItem value="webp">WEBP</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={() => { setSize(null); setLayers([]); setActiveId(null); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSize(null);
+                setLayers([]);
+                setActiveId(null);
+              }}
+            >
               Nueva imagen
             </Button>
           </div>
@@ -433,13 +482,48 @@ function EditorPage() {
       <div className="grid gap-4 lg:grid-cols-[64px_1fr_300px]">
         {/* Barra de herramientas */}
         <div className="flex h-fit flex-col gap-1 rounded-xl border border-border bg-card p-2">
-          <ToolBtn icon={Move} active={tool === "move"} onClick={() => setTool("move")} label="Mover (V)" />
-          <ToolBtn icon={Brush} active={tool === "brush"} onClick={() => setTool("brush")} label="Pincel (B)" />
-          <ToolBtn icon={Eraser} active={tool === "eraser"} onClick={() => setTool("eraser")} label="Borrador (E)" />
-          <ToolBtn icon={Square} active={tool === "rect"} onClick={() => setTool("rect")} label="Rectángulo (R)" />
-          <ToolBtn icon={CircleIcon} active={tool === "ellipse"} onClick={() => setTool("ellipse")} label="Elipse (O)" />
-          <ToolBtn icon={TypeIcon} active={tool === "text"} onClick={() => setTool("text")} label="Texto (T)" />
-          <ToolBtn icon={Pipette} active={tool === "eyedrop"} onClick={() => setTool("eyedrop")} label="Cuentagotas (I)" />
+          <ToolBtn
+            icon={Move}
+            active={tool === "move"}
+            onClick={() => setTool("move")}
+            label="Mover (V)"
+          />
+          <ToolBtn
+            icon={Brush}
+            active={tool === "brush"}
+            onClick={() => setTool("brush")}
+            label="Pincel (B)"
+          />
+          <ToolBtn
+            icon={Eraser}
+            active={tool === "eraser"}
+            onClick={() => setTool("eraser")}
+            label="Borrador (E)"
+          />
+          <ToolBtn
+            icon={Square}
+            active={tool === "rect"}
+            onClick={() => setTool("rect")}
+            label="Rectángulo (R)"
+          />
+          <ToolBtn
+            icon={CircleIcon}
+            active={tool === "ellipse"}
+            onClick={() => setTool("ellipse")}
+            label="Elipse (O)"
+          />
+          <ToolBtn
+            icon={TypeIcon}
+            active={tool === "text"}
+            onClick={() => setTool("text")}
+            label="Texto (T)"
+          />
+          <ToolBtn
+            icon={Pipette}
+            active={tool === "eyedrop"}
+            onClick={() => setTool("eyedrop")}
+            label="Cuentagotas (I)"
+          />
           <div className="my-1 h-px bg-border" />
           <ToolBtn icon={Undo2} onClick={undo} label="Deshacer" />
           <ToolBtn icon={Redo2} onClick={redo} label="Rehacer" />
@@ -459,21 +543,38 @@ function EditorPage() {
             </Label>
             <div className="flex min-w-[180px] items-center gap-2">
               <span className="text-muted-foreground">Tamaño</span>
-              <Slider value={[brushSize]} min={1} max={120} step={1} onValueChange={(v) => setBrushSize(v[0])} />
+              <Slider
+                value={[brushSize]}
+                min={1}
+                max={120}
+                step={1}
+                onValueChange={(v) => setBrushSize(v[0])}
+              />
               <span className="w-8 text-right tabular-nums">{brushSize}</span>
             </div>
             <div className="ml-auto flex items-center gap-1">
-              <Button size="icon" variant="ghost" onClick={() => setZoom((z) => Math.max(0.1, z - 0.1))}>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setZoom((z) => Math.max(0.1, z - 0.1))}
+              >
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <span className="w-12 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
-              <Button size="icon" variant="ghost" onClick={() => setZoom((z) => Math.min(4, z + 0.1))}>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setZoom((z) => Math.min(4, z + 0.1))}
+              >
                 <ZoomIn className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="relative overflow-auto rounded-xl border border-border bg-muted/30 p-4" style={{ maxHeight: "70vh" }}>
+          <div
+            className="relative overflow-auto rounded-xl border border-border bg-muted/30 p-4"
+            style={{ maxHeight: "70vh" }}
+          >
             <div
               className="relative mx-auto"
               style={{ width: size.w * zoom, height: size.h * zoom }}
@@ -533,11 +634,16 @@ function EditorPage() {
                     onClick={() => setActiveId(l.id)}
                     className={cn(
                       "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-                      activeId === l.id ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-accent",
+                      activeId === l.id
+                        ? "bg-primary/10 ring-1 ring-primary/40"
+                        : "hover:bg-accent",
                     )}
                   >
                     <button
-                      onClick={(e) => { e.stopPropagation(); updateLayer(l.id, { visible: !l.visible }); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateLayer(l.id, { visible: !l.visible });
+                      }}
                       className="text-muted-foreground"
                     >
                       {l.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -548,13 +654,31 @@ function EditorPage() {
                       onClick={(e) => e.stopPropagation()}
                       className="h-7 flex-1 border-0 bg-transparent px-1 text-sm focus-visible:ring-0"
                     />
-                    <button onClick={(e) => { e.stopPropagation(); moveLayer(l.id, 1); }} className="text-muted-foreground">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveLayer(l.id, 1);
+                      }}
+                      className="text-muted-foreground"
+                    >
                       <ChevronUp className="h-3 w-3" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); moveLayer(l.id, -1); }} className="text-muted-foreground">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveLayer(l.id, -1);
+                      }}
+                      className="text-muted-foreground"
+                    >
                       <ChevronDown className="h-3 w-3" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); deleteLayer(l.id); }} className="text-destructive">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteLayer(l.id);
+                      }}
+                      className="text-destructive"
+                    >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -578,25 +702,33 @@ function EditorPage() {
             <TabsContent value="adjust" className="space-y-3">
               {activeLayer ? (
                 <div className="space-y-3 rounded-lg border border-border bg-card p-3 text-sm">
-                  <p className="text-xs text-muted-foreground">Ajustes para « {activeLayer.name} »</p>
-                  {([
-                    ["brightness", "Brillo", 0, 200],
-                    ["contrast", "Contraste", 0, 200],
-                    ["saturation", "Saturación", 0, 200],
-                    ["hue", "Tono", -180, 180],
-                    ["blur", "Desenfoque", 0, 20],
-                  ] as Array<[keyof Adjustments, string, number, number]>).map(([k, lbl, min, max]) => (
+                  <p className="text-xs text-muted-foreground">
+                    Ajustes para « {activeLayer.name} »
+                  </p>
+                  {(
+                    [
+                      ["brightness", "Brillo", 0, 200],
+                      ["contrast", "Contraste", 0, 200],
+                      ["saturation", "Saturación", 0, 200],
+                      ["hue", "Tono", -180, 180],
+                      ["blur", "Desenfoque", 0, 20],
+                    ] as Array<[keyof Adjustments, string, number, number]>
+                  ).map(([k, lbl, min, max]) => (
                     <div key={k}>
                       <div className="mb-1 flex justify-between">
                         <span>{lbl}</span>
-                        <span className="tabular-nums text-muted-foreground">{activeLayer.adjust[k]}</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {activeLayer.adjust[k]}
+                        </span>
                       </div>
                       <Slider
                         value={[activeLayer.adjust[k]]}
                         min={min}
                         max={max}
                         step={1}
-                        onValueChange={(v) => updateAdjust(activeLayer.id, { [k]: v[0] } as Partial<Adjustments>)}
+                        onValueChange={(v) =>
+                          updateAdjust(activeLayer.id, { [k]: v[0] } as Partial<Adjustments>)
+                        }
                       />
                     </div>
                   ))}

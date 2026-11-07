@@ -32,6 +32,16 @@ import type { AppRole } from "@/models/types";
 const ROLES: AppRole[] = ["admin", "editor", "viewer"];
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
+  head: () => ({
+    meta: [
+      { title: "Usuarios y roles | AI Studio MG" },
+      { name: "description", content: "Gestiona los accesos y permisos de AI Studio MG." },
+      { property: "og:title", content: "Usuarios y roles | AI Studio MG" },
+      { property: "og:description", content: "Gestiona los accesos y permisos de AI Studio MG." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/login" });
@@ -87,9 +97,7 @@ function AdminUsersPage() {
     if (!q.trim()) return list;
     const s = q.toLowerCase();
     return list.filter(
-      (u) =>
-        u.email.toLowerCase().includes(s) ||
-        (u.display_name ?? "").toLowerCase().includes(s),
+      (u) => u.email.toLowerCase().includes(s) || (u.display_name ?? "").toLowerCase().includes(s),
     );
   }, [data, q]);
 
@@ -107,16 +115,18 @@ function AdminUsersPage() {
         />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar por correo o nombre…"
-            className="pl-9"
-          />
-        </div>
-        <Button onClick={() => setCreating(true)}><UserPlus className="h-4 w-4" /> Nuevo usuario</Button>
+          <div className="relative w-full max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por correo o nombre…"
+              className="pl-9"
+            />
+          </div>
+          <Button onClick={() => setCreating(true)}>
+            <UserPlus className="h-4 w-4" /> Nuevo usuario
+          </Button>
         </div>
         <CreateUserDialog open={creating} onOpenChange={setCreating} />
         <PasswordDialog user={pwUser} onClose={() => setPwUser(null)} />
@@ -142,7 +152,10 @@ function AdminUsersPage() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="py-10 text-center text-sm text-muted-foreground"
+                  >
                     Sin usuarios.
                   </TableCell>
                 </TableRow>
@@ -172,7 +185,11 @@ function AdminUsersPage() {
                                   type="button"
                                   className="ml-1 opacity-70 hover:opacity-100"
                                   onClick={() =>
-                                    mutate.mutate({ userId: u.id, role: r as AppRole, action: "remove" })
+                                    mutate.mutate({
+                                      userId: u.id,
+                                      role: r as AppRole,
+                                      action: "remove",
+                                    })
                                   }
                                   disabled={mutate.isPending}
                                   aria-label={`Quitar rol ${r}`}
@@ -185,9 +202,7 @@ function AdminUsersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {u.last_sign_in_at
-                          ? new Date(u.last_sign_in_at).toLocaleString()
-                          : "—"}
+                        {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         {available.length === 0 ? (
@@ -225,9 +240,32 @@ function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" title="Permisos CRUD" onClick={() => setPermUser({ id: u.id, name: u.display_name ?? u.email })}><ShieldCheck className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" title="Cambiar contraseña" onClick={() => setPwUser({ id: u.id, name: u.display_name ?? u.email })}><KeyRound className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" title="Eliminar" onClick={() => removeUser(u.id, u.display_name ?? u.email)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Permisos CRUD"
+                            onClick={() =>
+                              setPermUser({ id: u.id, name: u.display_name ?? u.email })
+                            }
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Cambiar contraseña"
+                            onClick={() => setPwUser({ id: u.id, name: u.display_name ?? u.email })}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Eliminar"
+                            onClick={() => removeUser(u.id, u.display_name ?? u.email)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

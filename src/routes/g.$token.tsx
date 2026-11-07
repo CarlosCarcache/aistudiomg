@@ -37,6 +37,7 @@ export const Route = createFileRoute("/g/$token")({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
 });
@@ -66,9 +67,15 @@ function PublicGalleryPage() {
         setImages(result.images);
         setUrls(result.urls);
       })
-      .catch(() => { if (active) setError(true); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [token, loadGallery]);
 
   const selectedImages = useMemo(
@@ -88,7 +95,8 @@ function PublicGalleryPage() {
   const submit = async () => {
     if (sending) return;
     const validated = sharedOrderSchema.safeParse({ ...form, imageIds: [...selected] });
-    if (!validated.success) return toast.error(validated.error.issues[0]?.message ?? "Revisa tus datos");
+    if (!validated.success)
+      return toast.error(validated.error.issues[0]?.message ?? "Revisa tus datos");
     setSending(true);
     try {
       await galleryController.submitSharedOrder(token, {
@@ -117,10 +125,10 @@ function PublicGalleryPage() {
             Enlace seguro · selecciona imágenes para pedir
           </p>
         </div>
-          <Button onClick={() => setOpen(true)} disabled={selected.size === 0}>
-            <ShoppingCart className="h-4 w-4" />
-            Solicitar pedido ({selected.size})
-          </Button>
+        <Button onClick={() => setOpen(true)} disabled={selected.size === 0}>
+          <ShoppingCart className="h-4 w-4" />
+          Solicitar pedido ({selected.size})
+        </Button>
       </header>
       <main className="mx-auto max-w-5xl space-y-6 p-6">
         {loading ? (
@@ -147,7 +155,8 @@ function PublicGalleryPage() {
                     isSel ? "border-primary ring-2 ring-primary/40" : "border-border"
                   }`}
                 >
-                  <Button variant="ghost"
+                  <Button
+                    variant="ghost"
                     type="button"
                     onClick={() => toggle(img.id)}
                     className="relative block h-auto w-full rounded-none p-0"
@@ -204,24 +213,36 @@ function PublicGalleryPage() {
               Revisa tus imágenes seleccionadas y completa tus datos.
             </DialogDescription>
           </DialogHeader>
-          <form id="shared-order-form" onSubmit={(event) => { event.preventDefault(); void submit(); }} className="space-y-3">
+          <form
+            id="shared-order-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submit();
+            }}
+            className="space-y-3"
+          >
             <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
               {selectedImages.map((img) => (
                 <li key={img.id} className="flex justify-between gap-2">
-                   {urls[img.id] && <img src={urls[img.id]} alt={img.title} className="h-12 w-12 shrink-0 rounded object-cover" />}
+                  {urls[img.id] && (
+                    <img
+                      src={urls[img.id]}
+                      alt={img.title}
+                      className="h-12 w-12 shrink-0 rounded object-cover"
+                    />
+                  )}
                   <span className="truncate">{img.title}</span>
                   <span>{fmt(img.price ?? 0)}</span>
                 </li>
               ))}
             </ul>
-            <p className="text-right text-sm font-semibold">
-              Total: {fmt(total)}
-            </p>
+            <p className="text-right text-sm font-semibold">Total: {fmt(total)}</p>
             <div className="space-y-2">
               <Label htmlFor="po-name">Tu nombre</Label>
               <Input
                 id="po-name"
-                required maxLength={100}
+                required
+                maxLength={100}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Nombre y apellido"
@@ -231,7 +252,8 @@ function PublicGalleryPage() {
               <Label htmlFor="po-phone">Teléfono (opcional)</Label>
               <Input
                 id="po-phone"
-                type="tel" maxLength={40}
+                type="tel"
+                maxLength={40}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="8888-8888"

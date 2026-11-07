@@ -2,17 +2,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { formatMoney, orderTotal } from "@/lib/money";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import {
-  Eye,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  Save,
-  Trash2,
-  Users,
-  X,
-} from "lucide-react";
+import { Eye, Loader2, Pencil, Plus, Search, Save, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/views/PageHeader";
 import { EmptyState } from "@/views/EmptyState";
@@ -49,8 +39,7 @@ export const Route = createFileRoute("/_authenticated/clients")({
       { title: "Clientes | AI Studio MG" },
       {
         name: "description",
-        content:
-          "Registro de clientes con contacto y notas para el estudio de diseño.",
+        content: "Registro de clientes con contacto y notas para el estudio de diseño.",
       },
       { property: "og:title", content: "Clientes | AI Studio MG" },
       {
@@ -99,8 +88,7 @@ function ClientsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const set = (k: keyof typeof emptyForm, v: string) =>
-    setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof typeof emptyForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const reset = () => {
     setForm(emptyForm);
@@ -332,65 +320,57 @@ function ClientsPage() {
                       No se encontraron clientes con ese nombre.
                     </TableCell>
                   </TableRow>
-                ) : filteredClients.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">
-                      {c.first_name} {c.last_name ?? ""}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.email ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.phone ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => openOrders(c)}
-                        aria-label="Ver pedidos"
-                        title="Ver pedidos"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => startEdit(c)}
-                        aria-label="Editar"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => remove(c.id)}
-                        aria-label="Eliminar"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                ) : (
+                  filteredClients.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">
+                        {c.first_name} {c.last_name ?? ""}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{c.email ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.phone ?? "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => openOrders(c)}
+                          aria-label="Ver pedidos"
+                          title="Ver pedidos"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => startEdit(c)}
+                          aria-label="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => remove(c.id)}
+                          aria-label="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       )}
 
-      <Dialog
-        open={!!ordersClient}
-        onOpenChange={(open) => !open && setOrdersClient(null)}
-      >
+      <Dialog open={!!ordersClient} onOpenChange={(open) => !open && setOrdersClient(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Pedidos de {ordersClient?.first_name}{" "}
-              {ordersClient?.last_name ?? ""}
+              Pedidos de {ordersClient?.first_name} {ordersClient?.last_name ?? ""}
             </DialogTitle>
-            <DialogDescription>
-              Todos los pedidos que ha realizado este cliente.
-            </DialogDescription>
+            <DialogDescription>Todos los pedidos que ha realizado este cliente.</DialogDescription>
           </DialogHeader>
           {ordersLoading ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
@@ -405,16 +385,14 @@ function ClientsPage() {
           ) : (
             <div className="max-h-[50vh] overflow-y-auto">
               <div className="flex flex-wrap gap-2 px-1 pb-3 text-xs">
-                {(["nuevo", "en_proceso", "terminado"] as OrderStatus[]).map(
-                  (s) => {
-                    const n = clientOrders.filter((o) => o.status === s).length;
-                    return (
-                      <Badge key={s} variant={orderStatusVariant(s)}>
-                        {orderStatusLabel(s)}: {n}
-                      </Badge>
-                    );
-                  },
-                )}
+                {(["nuevo", "en_proceso", "terminado"] as OrderStatus[]).map((s) => {
+                  const n = clientOrders.filter((o) => o.status === s).length;
+                  return (
+                    <Badge key={s} variant={orderStatusVariant(s)}>
+                      {orderStatusLabel(s)}: {n}
+                    </Badge>
+                  );
+                })}
               </div>
               <Table>
                 <TableHeader>
@@ -442,9 +420,7 @@ function ClientsPage() {
                             )}`
                           : "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {o.due_date ?? "—"}
-                      </TableCell>
+                      <TableCell className="text-muted-foreground">{o.due_date ?? "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

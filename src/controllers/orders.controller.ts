@@ -23,11 +23,7 @@ export const ordersController = {
   },
 
   async create(input: NewOrder): Promise<Order> {
-    const { data, error } = await supabase
-      .from("orders")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("orders").insert(input).select().single();
     if (error) throw error;
     return data;
   },

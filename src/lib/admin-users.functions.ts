@@ -55,11 +55,13 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      userId: z.string().uuid(),
-      role: z.enum(ROLES),
-      action: z.enum(["add", "remove"]),
-    }).parse(input),
+    z
+      .object({
+        userId: z.string().uuid(),
+        role: z.enum(ROLES),
+        action: z.enum(["add", "remove"]),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -90,16 +92,31 @@ export const setUserRole = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const MODULES = ["projects", "orders", "clients", "employees", "catalog", "gallery", "portfolio"] as const;
+export const MODULES = [
+  "projects",
+  "orders",
+  "clients",
+  "employees",
+  "catalog",
+  "gallery",
+  "portfolio",
+] as const;
 
 export const createUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/),
-      password: z.string().min(8).max(72),
-      role: z.enum(ROLES),
-    }).parse(input),
+    z
+      .object({
+        username: z
+          .string()
+          .trim()
+          .min(3)
+          .max(40)
+          .regex(/^[a-zA-Z0-9._-]+$/),
+        password: z.string().min(8).max(72),
+        role: z.enum(ROLES),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -112,10 +129,9 @@ export const createUser = createServerFn({ method: "POST" })
     });
     if (error || !created.user) throw new Error("No se pudo crear el usuario (¿ya existe?)");
     if (data.role !== "viewer") {
-      await supabaseAdmin.from("user_roles").upsert(
-        { user_id: created.user.id, role: data.role },
-        { onConflict: "user_id,role" },
-      );
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert({ user_id: created.user.id, role: data.role }, { onConflict: "user_id,role" });
     }
     return { id: created.user.id };
   });

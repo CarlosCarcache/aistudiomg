@@ -7,3 +7,4 @@
 - [ ] Revisar código, seguridad y errores de los módulos
 - [ ] Corregir errores confirmados y ejecutar pruebas disponibles
 - [ ] Verificar recorridos principales con sesión y guardar los cambios
+- [ ] Corregir y probar las imágenes de carpetas compartidas desde Proyectos

@@ -19,7 +19,12 @@ export function usePermissions(module: string) {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
       const [{ data: admin }, { data: perm }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", u.user.id)
+          .eq("role", "admin")
+          .maybeSingle(),
         supabase
           .from("user_permissions")
           .select("can_create, can_read, can_update, can_delete")

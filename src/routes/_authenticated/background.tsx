@@ -10,13 +10,29 @@ import { PageHeader } from "@/views/PageHeader";
 import { removeBackground } from "@imgly/background-removal";
 
 export const Route = createFileRoute("/_authenticated/background")({
+  head: () => ({
+    meta: [
+      { title: "Fondos | AI Studio MG" },
+      { name: "description", content: "Quita o reemplaza fondos de tus imágenes." },
+      { property: "og:title", content: "Fondos | AI Studio MG" },
+      { property: "og:description", content: "Quita o reemplaza fondos de tus imágenes." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: BackgroundPage,
 });
 
 const PRESETS = [
-  { label: "Limpiar imagen", prompt: "Limpia esta imagen, quita ruido y artefactos, conserva el sujeto principal nítido." },
+  {
+    label: "Limpiar imagen",
+    prompt: "Limpia esta imagen, quita ruido y artefactos, conserva el sujeto principal nítido.",
+  },
   { label: "Fondo blanco", prompt: "Reemplaza el fondo por un blanco puro liso." },
-  { label: "Fondo estudio", prompt: "Coloca al sujeto sobre un fondo de estudio gris degradado profesional." },
+  {
+    label: "Fondo estudio",
+    prompt: "Coloca al sujeto sobre un fondo de estudio gris degradado profesional.",
+  },
 ];
 
 function BackgroundPage() {
@@ -63,14 +79,23 @@ function BackgroundPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <PageHeader title="Fondos" description="Quita fondo, limpia, agrega fondos nuevos o pide cambios por texto." />
+      <PageHeader
+        title="Fondos"
+        description="Quita fondo, limpia, agrega fondos nuevos o pide cambios por texto."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="space-y-4">
           <ImageDropzone
             preview={src}
-            onClear={() => { setSrc(null); setResult(null); }}
-            onFiles={(f) => { setSrc(f[0].dataUrl); setResult(null); }}
+            onClear={() => {
+              setSrc(null);
+              setResult(null);
+            }}
+            onFiles={(f) => {
+              setSrc(f[0].dataUrl);
+              setResult(null);
+            }}
           />
 
           <div className="space-y-2 rounded-xl border border-border bg-card p-4">
@@ -81,7 +106,13 @@ function BackgroundPage() {
             </Button>
             <div className="grid grid-cols-2 gap-2">
               {PRESETS.map((p) => (
-                <Button key={p.label} variant="secondary" size="sm" disabled={!src || loading} onClick={() => run(p.prompt)}>
+                <Button
+                  key={p.label}
+                  variant="secondary"
+                  size="sm"
+                  disabled={!src || loading}
+                  onClick={() => run(p.prompt)}
+                >
                   <Layers className="h-4 w-4" />
                   {p.label}
                 </Button>
@@ -95,8 +126,16 @@ function BackgroundPage() {
             rows={4}
             placeholder="Ej: cámbiale el fondo a una playa al atardecer..."
           />
-          <Button onClick={() => run(prompt)} disabled={!src || loading || !prompt.trim()} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <Button
+            onClick={() => run(prompt)}
+            disabled={!src || loading || !prompt.trim()}
+            className="w-full"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
             Aplicar cambio
           </Button>
         </div>
@@ -108,7 +147,9 @@ function BackgroundPage() {
                 src={result}
                 alt="result"
                 className="mx-auto max-h-[520px] rounded-xl"
-                style={{ background: "repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 50% / 16px 16px" }}
+                style={{
+                  background: "repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 50% / 16px 16px",
+                }}
               />
               <div className="flex justify-end">
                 <Button onClick={() => downloadDataUrl(result, `bg-${Date.now()}.png`)}>

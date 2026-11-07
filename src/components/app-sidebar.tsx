@@ -63,9 +63,7 @@ const business: Item[] = [
   { title: "Empleados", url: "/employees", icon: BadgeCheck },
 ];
 
-const account: Item[] = [
-  { title: "Configuración", url: "/settings", icon: Settings },
-];
+const account: Item[] = [{ title: "Configuración", url: "/settings", icon: Settings }];
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -115,7 +113,11 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/admin/users")} tooltip="Usuarios y roles">
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/admin/users")}
+                    tooltip="Usuarios y roles"
+                  >
                     <Link to="/admin/users" className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4" />
                       <span>Usuarios y roles</span>
@@ -123,7 +125,11 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/backups")} tooltip="Copias de seguridad">
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/backups")}
+                    tooltip="Copias de seguridad"
+                  >
                     <Link to="/backups" className="flex items-center gap-2">
                       <DatabaseBackup className="h-4 w-4" />
                       <span>Copias de seguridad</span>

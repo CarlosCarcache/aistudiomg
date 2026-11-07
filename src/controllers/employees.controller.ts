@@ -13,11 +13,7 @@ export const employeesController = {
   },
 
   async create(input: NewEmployee): Promise<Employee> {
-    const { data, error } = await supabase
-      .from("employees")
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from("employees").insert(input).select().single();
     if (error) throw error;
     return data;
   },
