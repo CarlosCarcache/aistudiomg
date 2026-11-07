@@ -1,10 +1,10 @@
 - [x] Aplicar permisos CRUD por módulo en páginas y en la base de datos
 - [x] Estados de pedidos en el panel de clientes (colores + resumen)
 - [x] Apartado de copias de seguridad con descarga JSON
-- [ ] Organizar proyectos en carpetas por categoría
-- [ ] Verificar formulario compartido, imágenes, precios y recepción en Pedidos
-- [ ] Enviar cambios a main (requiere seleccionar main en la sincronización Git de Lovable)
-- [ ] Revisar código, seguridad y errores de los módulos
-- [ ] Corregir errores confirmados y ejecutar pruebas disponibles
-- [ ] Verificar recorridos principales con sesión y guardar los cambios
-- [ ] Corregir y probar las imágenes de carpetas compartidas desde Proyectos
+- [x] Organizar proyectos en carpetas por categoría
+- [x] Verificar formulario compartido, imágenes, precios y recepción en Pedidos
+- [x] Guardar cambios en main para la sincronización de Lovable
+- [x] Revisar código, seguridad y errores de los módulos
+- [x] Corregir errores confirmados y ejecutar pruebas disponibles (4 pruebas; lint sin errores)
+- [x] Verificar navegación autenticada, respaldo descargado y pedido compartido recibido; guardar los cambios
+- [x] Corregir y probar las imágenes de carpetas compartidas desde Proyectos
