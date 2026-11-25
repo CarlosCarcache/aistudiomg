@@ -90,8 +90,9 @@ function OrdersPage() {
       .list()
       .then(async (rows) => {
         setOrders(rows);
-        const paths = rows.flatMap((row) =>
-          Array.isArray(row.selected_images)
+        const paths = rows.flatMap((row) => [
+          ...(row.request_type === "quote" && row.image_url ? [row.image_url] : []),
+          ...(Array.isArray(row.selected_images)
             ? row.selected_images.flatMap((item) =>
                 item &&
                 typeof item === "object" &&
@@ -100,8 +101,8 @@ function OrdersPage() {
                   ? [item.image_url]
                   : [],
               )
-            : [],
-        );
+            : []),
+        ]);
         setSharedUrls(
           Object.fromEntries(
             await Promise.all(
@@ -182,7 +183,7 @@ function OrdersPage() {
           title: title.trim(),
           description: description.trim() || null,
           notes: notes.trim() || null,
-          ...(Array.isArray(editingOrder.selected_images)
+          ...(Array.isArray(editingOrder.selected_images) && editingOrder.request_type !== "quote"
             ? {}
             : {
                 price: price ? Number(price) : null,
@@ -305,10 +306,20 @@ function OrdersPage() {
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="text-base">{order.title}</CardTitle>
-                <Badge variant="secondary">{statusLabel(order.status)}</Badge>
+                <div className="flex shrink-0 flex-wrap justify-end gap-1">
+                  {order.request_type === "quote" && <Badge>Cotización</Badge>}
+                  <Badge variant="secondary">{statusLabel(order.status)}</Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {order.request_type === "quote" && order.image_url && sharedUrls[order.image_url] && (
+                <img
+                  src={sharedUrls[order.image_url]}
+                  alt="Imagen adjunta para cotizar"
+                  className="max-h-56 w-full rounded-lg border border-border object-contain"
+                />
+              )}
               {Array.isArray(order.selected_images) && (
                 <div className="space-y-2">
                   {order.selected_images.map((item, index) => {
@@ -326,7 +337,9 @@ function OrdersPage() {
                           {String(item.title ?? "Imagen")}
                         </span>
                         <span className="text-sm font-medium">
-                          {formatMoney(Number(item.price ?? 0), order.currency)}
+                          {order.request_type === "quote"
+                            ? "Por cotizar"
+                            : formatMoney(Number(item.price ?? 0), order.currency)}
                         </span>
                       </div>
                     );
@@ -340,14 +353,20 @@ function OrdersPage() {
                 <p className="text-sm text-muted-foreground">{order.description}</p>
               )}
               <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {order.price != null && (
+                {order.request_type === "quote" && order.price == null ? (
                   <span>
-                    Precio: {formatMoney(Number(order.price), order.currency)} ×{" "}
-                    {order.quantity ?? 1} ={" "}
-                    <span className="font-medium text-foreground">
-                      {formatMoney(orderTotal(order.price, order.quantity), order.currency)}
-                    </span>
+                    Precio: <span className="font-medium text-foreground">Por cotizar</span>
                   </span>
+                ) : (
+                  order.price != null && (
+                    <span>
+                      Precio: {formatMoney(Number(order.price), order.currency)} ×{" "}
+                      {order.quantity ?? 1} ={" "}
+                      <span className="font-medium text-foreground">
+                        {formatMoney(orderTotal(order.price, order.quantity), order.currency)}
+                      </span>
+                    </span>
+                  )
                 )}
                 {order.client_id && (
                   <span>
@@ -532,7 +551,9 @@ function OrdersPage() {
                       value={cur}
                       onValueChange={(v) => setCur(v as CurrencyCode)}
                       disabled={Boolean(
-                        editingOrder && Array.isArray(editingOrder.selected_images),
+                        editingOrder &&
+                        editingOrder.request_type !== "quote" &&
+                        Array.isArray(editingOrder.selected_images),
                       )}
                     >
                       <SelectTrigger className="w-36">
@@ -554,7 +575,9 @@ function OrdersPage() {
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="0.00"
                       disabled={Boolean(
-                        editingOrder && Array.isArray(editingOrder.selected_images),
+                        editingOrder &&
+                        editingOrder.request_type !== "quote" &&
+                        Array.isArray(editingOrder.selected_images),
                       )}
                     />
                   </div>
@@ -569,13 +592,19 @@ function OrdersPage() {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder="1"
-                    disabled={Boolean(editingOrder && Array.isArray(editingOrder.selected_images))}
+                    disabled={Boolean(
+                      editingOrder &&
+                      editingOrder.request_type !== "quote" &&
+                      Array.isArray(editingOrder.selected_images),
+                    )}
                   />
-                  {editingOrder && Array.isArray(editingOrder.selected_images) && (
-                    <p className="text-xs text-muted-foreground">
-                      El precio de este pedido se conserva según las imágenes seleccionadas.
-                    </p>
-                  )}
+                  {editingOrder &&
+                    editingOrder.request_type !== "quote" &&
+                    Array.isArray(editingOrder.selected_images) && (
+                      <p className="text-xs text-muted-foreground">
+                        El precio de este pedido se conserva según las imágenes seleccionadas.
+                      </p>
+                    )}
                   <p className="text-xs text-muted-foreground">
                     Total:{" "}
                     <span className="font-medium text-foreground">

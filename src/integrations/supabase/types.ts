@@ -277,6 +277,7 @@ export type Database = {
           price: number | null
           project_id: string | null
           quantity: number
+          request_type: string
           selected_images: Json | null
           status: Database["public"]["Enums"]["order_status"]
           title: string
@@ -298,6 +299,7 @@ export type Database = {
           price?: number | null
           project_id?: string | null
           quantity?: number
+          request_type?: string
           selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
@@ -319,6 +321,7 @@ export type Database = {
           price?: number | null
           project_id?: string | null
           quantity?: number
+          request_type?: string
           selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
@@ -577,6 +580,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_shared_gallery_quote: {
+        Args: {
+          _image_ids: string[]
+          _image_name: string
+          _image_path: string
+          _notes: string
+          _token: string
+        }
+        Returns: string
+      }
       get_shared_gallery: {
         Args: { _token: string }
         Returns: {
@@ -597,6 +610,17 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_shared_gallery_client: {
+        Args: { _token: string }
+        Returns: {
+          client_id: string
+          email: string
+          first_name: string
+          last_name: string
+          owner_id: string
+          phone: string
+        }[]
       }
       has_perm: {
         Args: { _action: string; _module: string; _user_id: string }

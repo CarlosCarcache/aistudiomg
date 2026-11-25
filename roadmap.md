@@ -8,3 +8,5 @@
 - [x] Corregir errores confirmados y ejecutar pruebas disponibles (4 pruebas; lint sin errores)
 - [x] Verificar navegación autenticada, respaldo descargado y pedido compartido recibido; guardar los cambios
 - [x] Corregir y probar las imágenes de carpetas compartidas desde Proyectos
+- [ ] Agregar solicitud de cotización con datos guardados del cliente no editables e imagen propia o compartida
+- [ ] Verificar recepción de la cotización y su imagen en Pedidos

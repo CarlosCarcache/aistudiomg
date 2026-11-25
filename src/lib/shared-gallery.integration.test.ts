@@ -36,4 +36,31 @@ describe("shared category capability", { skip: !token || !creator }, () => {
     const error = (await response.json()) as { message: string };
     assert.equal(error.message, "Las imágenes no pertenecen a este enlace");
   });
+
+  it("returns the saved client for the shared link", async () => {
+    const response = await rpc("get_shared_gallery_client", { _token: token });
+    assert.equal(response.status, 200);
+    const clients = (await response.json()) as {
+      owner_id: string;
+      client_id: string;
+      first_name: string;
+    }[];
+    assert.equal(clients.length, 1);
+    assert.equal(clients[0]?.owner_id, creator);
+    assert.ok(clients[0]?.client_id);
+    assert.ok(clients[0]?.first_name);
+  });
+
+  it("rejects quote selections outside the shared folder", async () => {
+    const response = await rpc("create_shared_gallery_quote", {
+      _token: token,
+      _notes: "",
+      _image_path: "",
+      _image_name: "",
+      _image_ids: ["00000000-0000-4000-8000-000000000001"],
+    });
+    assert.equal(response.status, 400);
+    const error = (await response.json()) as { message: string };
+    assert.equal(error.message, "Las imágenes no pertenecen a este enlace");
+  });
 });

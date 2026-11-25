@@ -1,12 +1,12 @@
-// Ruta pública: galería compartida por enlace seguro (solo lectura + pedido).
+// Ruta pública: galería compartida por enlace seguro (solo lectura + cotización).
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { getSharedGallery } from "@/lib/shared-gallery.functions";
-import { sharedOrderSchema, sharedImageTotal } from "@/lib/shared-order";
+import { getSharedGallery, submitSharedQuote } from "@/lib/shared-gallery.functions";
+import { MAX_SHARED_QUOTE_IMAGE_SIZE, sharedQuoteSchema } from "@/lib/shared-order";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Download, Images, Loader2, ShoppingCart } from "lucide-react";
+import type { ChangeEvent } from "react";
+import { Check, Download, Images, Loader2, Send, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { galleryController } from "@/controllers/gallery.controller";
 import type { GalleryImage } from "@/models/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/g/$token")({
       { property: "og:title", content: "Galería del cliente | AI Studio MG" },
       {
         property: "og:description",
-        content: "Revisa las imágenes que el estudio compartió contigo.",
+        content: "Revisa las imágenes que el estudio compartió contigo y solicita una cotización.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -44,28 +44,53 @@ export const Route = createFileRoute("/g/$token")({
 
 const fmt = (n: number) => `C$${n.toFixed(2)}`;
 
+type SavedClient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+};
+
+type UploadedImage = { name: string; dataUrl: string };
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function PublicGalleryPage() {
   const loadGallery = useServerFn(getSharedGallery);
+  const sendQuote = useServerFn(submitSharedQuote);
   const { token } = Route.useParams();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [savedClient, setSavedClient] = useState<SavedClient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", notes: "" });
+  const [preparing, setPreparing] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [upload, setUpload] = useState<UploadedImage | null>(null);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(false);
     setSelected(new Set());
+    setUpload(null);
     loadGallery({ data: { token } })
       .then((result) => {
         if (!active) return;
         setImages(result.images);
         setUrls(result.urls);
+        setSavedClient(result.client);
       })
       .catch(() => {
         if (active) setError(true);
@@ -79,38 +104,66 @@ function PublicGalleryPage() {
   }, [token, loadGallery]);
 
   const selectedImages = useMemo(
-    () => images.filter((i) => selected.has(i.id)),
+    () => images.filter((image) => selected.has(image.id)),
     [images, selected],
   );
-  const total = sharedImageTotal(selectedImages);
+  const clientName = [savedClient?.firstName, savedClient?.lastName].filter(Boolean).join(" ");
 
   const toggle = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
+    setSelected((previous) => {
+      const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
 
+  const chooseImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Usa una imagen JPG, PNG o WEBP");
+      input.value = "";
+      return;
+    }
+    if (file.size > MAX_SHARED_QUOTE_IMAGE_SIZE) {
+      toast.error("La imagen no puede superar 5 MB");
+      input.value = "";
+      return;
+    }
+    setPreparing(true);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setUpload({ name: file.name.slice(0, 160), dataUrl });
+    } catch {
+      toast.error("No se pudo leer la imagen");
+    } finally {
+      setPreparing(false);
+      input.value = "";
+    }
+  };
+
   const submit = async () => {
     if (sending) return;
-    const validated = sharedOrderSchema.safeParse({ ...form, imageIds: [...selected] });
+    const input = {
+      notes,
+      imageName: upload?.name ?? "",
+      imageDataUrl: upload?.dataUrl ?? "",
+      imageIds: [...selected],
+    };
+    const validated = sharedQuoteSchema.safeParse(input);
     if (!validated.success)
-      return toast.error(validated.error.issues[0]?.message ?? "Revisa tus datos");
+      return toast.error(validated.error.issues[0]?.message ?? "Revisa la solicitud");
     setSending(true);
     try {
-      await galleryController.submitSharedOrder(token, {
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        notes: form.notes.trim(),
-        imageIds: [...selected],
-      });
-      toast.success("Pedido enviado al estudio");
+      await sendQuote({ data: { token, ...validated.data } });
+      toast.success("Cotización enviada al estudio");
       setOpen(false);
       setSelected(new Set());
-      setForm({ name: "", phone: "", notes: "" });
+      setNotes("");
+      setUpload(null);
     } catch {
-      toast.error("No se pudo enviar el pedido, intenta de nuevo");
+      toast.error("No se pudo enviar la cotización, intenta de nuevo");
     } finally {
       setSending(false);
     }
@@ -118,79 +171,82 @@ function PublicGalleryPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-6">
         <div>
           <h1 className="text-lg font-semibold">Galería del cliente</h1>
           <p className="text-xs text-muted-foreground">
-            Enlace seguro · selecciona imágenes para pedir
+            Elige imágenes compartidas o adjunta una referencia para cotizar
           </p>
         </div>
-        <Button onClick={() => setOpen(true)} disabled={selected.size === 0}>
-          <ShoppingCart className="h-4 w-4" />
-          Solicitar pedido ({selected.size})
+        <Button onClick={() => setOpen(true)} disabled={loading || error || !savedClient}>
+          <Send className="h-4 w-4" />
+          Solicitar cotización{selected.size > 0 ? ` (${selected.size})` : ""}
         </Button>
       </header>
-      <main className="mx-auto max-w-5xl space-y-6 p-6">
+      <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
         {loading ? (
           <div className="grid place-items-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : error || images.length === 0 ? (
+        ) : error ? (
+          <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
+            <Images className="h-10 w-10 text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">El enlace no es válido o expiró.</p>
+          </div>
+        ) : images.length === 0 ? (
           <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
             <Images className="h-10 w-10 text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">
-              {error
-                ? "El enlace no es válido o expiró."
-                : "Todavía no hay imágenes compartidas en este enlace."}
+              No hay imágenes compartidas, pero puedes adjuntar una para solicitar tu cotización.
             </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {images.map((img) => {
-              const isSel = selected.has(img.id);
+            {images.map((image) => {
+              const isSelected = selected.has(image.id);
               return (
                 <figure
-                  key={img.id}
+                  key={image.id}
                   className={`overflow-hidden rounded-xl border bg-card transition ${
-                    isSel ? "border-primary ring-2 ring-primary/40" : "border-border"
+                    isSelected ? "border-primary ring-2 ring-primary/40" : "border-border"
                   }`}
                 >
                   <Button
                     variant="ghost"
                     type="button"
-                    onClick={() => toggle(img.id)}
+                    onClick={() => toggle(image.id)}
                     className="relative block h-auto w-full rounded-none p-0"
-                    aria-label={`Seleccionar ${img.title}`}
-                    aria-pressed={isSel}
+                    aria-label={`Seleccionar ${image.title}`}
+                    aria-pressed={isSelected}
                   >
-                    {urls[img.id] ? (
+                    {urls[image.id] ? (
                       <img
-                        src={urls[img.id]}
-                        alt={img.title}
+                        src={urls[image.id]}
+                        alt={image.title}
                         loading="lazy"
                         className="aspect-square w-full object-cover"
                       />
                     ) : (
                       <div className="aspect-square bg-muted" />
                     )}
-                    {isSel && (
+                    {isSelected && (
                       <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">
                         <Check className="h-4 w-4" />
                       </span>
                     )}
                   </Button>
                   <figcaption className="flex items-center justify-between gap-2 p-3 text-sm">
-                    <span className="truncate">{img.title}</span>
+                    <span className="truncate">{image.title}</span>
                     <span className="flex items-center gap-1">
-                      <span className="font-medium">{fmt(img.price ?? 0)}</span>
-                      {urls[img.id] && (
+                      <span className="font-medium">{fmt(image.price ?? 0)}</span>
+                      {urls[image.id] && (
                         <Button asChild size="icon" variant="ghost">
                           <a
-                            href={urls[img.id]}
+                            href={urls[image.id]}
                             download
                             target="_blank"
                             rel="noreferrer"
-                            aria-label={`Descargar ${img.title}`}
+                            aria-label={`Descargar ${image.title}`}
                           >
                             <Download className="h-4 w-4" />
                           </a>
@@ -205,75 +261,132 @@ function PublicGalleryPage() {
         )}
       </main>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+      <Dialog open={open} onOpenChange={(nextOpen) => !sending && setOpen(nextOpen)}>
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Solicitar pedido</DialogTitle>
+            <DialogTitle>Solicitar cotización</DialogTitle>
             <DialogDescription>
-              Revisa tus imágenes seleccionadas y completa tus datos.
+              Tus datos registrados se adjuntan automáticamente y no se pueden editar.
             </DialogDescription>
           </DialogHeader>
           <form
-            id="shared-order-form"
+            id="shared-quote-form"
             onSubmit={(event) => {
               event.preventDefault();
               void submit();
             }}
-            className="space-y-3"
+            className="space-y-4"
           >
-            <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
-              {selectedImages.map((img) => (
-                <li key={img.id} className="flex justify-between gap-2">
-                  {urls[img.id] && (
-                    <img
-                      src={urls[img.id]}
-                      alt={img.title}
-                      className="h-12 w-12 shrink-0 rounded object-cover"
-                    />
-                  )}
-                  <span className="truncate">{img.title}</span>
-                  <span>{fmt(img.price ?? 0)}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-right text-sm font-semibold">Total: {fmt(total)}</p>
-            <div className="space-y-2">
-              <Label htmlFor="po-name">Tu nombre</Label>
-              <Input
-                id="po-name"
-                required
-                maxLength={100}
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Nombre y apellido"
-              />
+            <div className="grid gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="quote-client-name">Nombre del cliente</Label>
+                <Input id="quote-client-name" value={clientName} readOnly aria-readonly="true" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quote-client-phone">Teléfono registrado</Label>
+                <Input
+                  id="quote-client-phone"
+                  value={savedClient?.phone || "No registrado"}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quote-client-email">Correo registrado</Label>
+                <Input
+                  id="quote-client-email"
+                  value={savedClient?.email || "No registrado"}
+                  readOnly
+                  aria-readonly="true"
+                />
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="po-phone">Teléfono (opcional)</Label>
+              <Label htmlFor="quote-image">Subir una imagen propia</Label>
               <Input
-                id="po-phone"
-                type="tel"
-                maxLength={40}
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="8888-8888"
+                id="quote-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={chooseImage}
+                disabled={preparing || sending}
               />
+              <p className="text-xs text-muted-foreground">JPG, PNG o WEBP · máximo 5 MB</p>
+              {preparing && (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Preparando imagen…
+                </p>
+              )}
+              {upload && (
+                <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                  <img
+                    src={upload.dataUrl}
+                    alt="Referencia para cotizar"
+                    className="h-20 w-20 rounded-md object-cover"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm">{upload.name}</span>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setUpload(null)}
+                    aria-label="Quitar imagen adjunta"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
+
+            {selectedImages.length > 0 && (
+              <div className="space-y-2">
+                <Label>Imágenes compartidas seleccionadas</Label>
+                <ul className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-border p-3 text-sm">
+                  {selectedImages.map((image) => (
+                    <li key={image.id} className="flex items-center gap-3">
+                      {urls[image.id] && (
+                        <img
+                          src={urls[image.id]}
+                          alt={image.title}
+                          className="h-12 w-12 shrink-0 rounded object-cover"
+                        />
+                      )}
+                      <span className="min-w-0 flex-1 truncate">{image.title}</span>
+                      <span className="text-xs text-muted-foreground">Precio por confirmar</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p className="text-sm text-muted-foreground">
+              Puedes usar una imagen propia, imágenes compartidas o ambas. El estudio confirmará el
+              precio.
+            </p>
             <div className="space-y-2">
-              <Label htmlFor="po-notes">Notas (opcional)</Label>
+              <Label htmlFor="quote-notes">Detalles para cotizar (opcional)</Label>
               <Textarea
-                id="po-notes"
+                id="quote-notes"
                 maxLength={1000}
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Cantidades, tamaños, detalles…"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                placeholder="Cantidades, tamaños, colores, fecha deseada…"
+                rows={4}
               />
             </div>
           </form>
           <DialogFooter>
-            <Button type="submit" form="shared-order-form" disabled={sending}>
-              {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Enviar pedido
+            <Button
+              type="submit"
+              form="shared-quote-form"
+              disabled={sending || preparing || !savedClient}
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Enviar cotización
             </Button>
           </DialogFooter>
         </DialogContent>
