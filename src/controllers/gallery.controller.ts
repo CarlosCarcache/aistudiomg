@@ -5,6 +5,7 @@ import type {
   GalleryImage,
   GalleryShare,
   NewGalleryImage,
+  SharedQuote,
   UpdateGalleryImage,
 } from "@/models/types";
 
@@ -136,13 +137,34 @@ export const galleryController = {
     input: { name: string; phone: string; notes: string; imageIds: string[] },
   ): Promise<void> {
     input = sharedOrderSchema.parse(input);
-    const { error } = await supabase.rpc("create_shared_gallery_order", {
+    const { error } = await supabase.rpc("create_shared_gallery_order_quote", {
       _token: token,
       _client_name: input.name,
       _phone: input.phone,
       _notes: input.notes,
       _image_ids: input.imageIds,
     });
-    if (error) throw new Error("No se pudo enviar el pedido");
+    if (error) throw new Error("No se pudo enviar la solicitud de cotización");
+  },
+
+  async listSharedQuotes(token: string): Promise<SharedQuote[]> {
+    const { data, error } = await supabase.rpc("get_shared_quotes", {
+      _token: token,
+    });
+    if (error) throw new Error("No se pudieron cargar las cotizaciones");
+    return data ?? [];
+  },
+
+  async respondToSharedQuote(
+    token: string,
+    orderId: string,
+    accept: boolean,
+  ): Promise<void> {
+    const { error } = await supabase.rpc("respond_to_shared_quote", {
+      _token: token,
+      _order_id: orderId,
+      _accept: accept,
+    });
+    if (error) throw new Error("No se pudo responder a la cotización");
   },
 };

@@ -17,6 +17,9 @@ import {
   BookOpen,
   Users,
   ClipboardList,
+  FileCheck2,
+  Package,
+  Calculator,
   BadgeCheck,
   DatabaseBackup,
 } from "lucide-react";
@@ -58,7 +61,10 @@ const business: Item[] = [
   { title: "Galería", url: "/gallery", icon: Images },
   { title: "Historial de Pedidos", url: "/portfolio", icon: GalleryHorizontalEnd },
   { title: "Categorías", url: "/catalog", icon: BookOpen },
+  { title: "Insumos", url: "/supplies", icon: Package },
+  { title: "Precio sugerido", url: "/pricing", icon: Calculator },
   { title: "Clientes", url: "/clients", icon: Users },
+  { title: "Cotizaciones", url: "/quotes", icon: FileCheck2 },
   { title: "Pedidos", url: "/orders", icon: ClipboardList },
   { title: "Empleados", url: "/employees", icon: BadgeCheck },
 ];

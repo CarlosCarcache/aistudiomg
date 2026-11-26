@@ -26,9 +26,12 @@ import { Route as AuthenticatedGenerateRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedHalftoneRouteImport } from './routes/_authenticated/halftone'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
+import { Route as AuthenticatedPricingRouteImport } from './routes/_authenticated/pricing'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
 import { Route as AuthenticatedQualityRouteImport } from './routes/_authenticated/quality'
+import { Route as AuthenticatedQuotesRouteImport } from './routes/_authenticated/quotes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSuppliesRouteImport } from './routes/_authenticated/supplies'
 import { Route as AuthenticatedVectorizeRouteImport } from './routes/_authenticated/vectorize'
 import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-image'
 import { Route as GTokenRouteImport } from './routes/g.$token'
@@ -118,6 +121,11 @@ const AuthenticatedPortfolioRoute = AuthenticatedPortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPricingRoute = AuthenticatedPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -128,9 +136,19 @@ const AuthenticatedQualityRoute = AuthenticatedQualityRouteImport.update({
   path: '/quality',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedQuotesRoute = AuthenticatedQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSuppliesRoute = AuthenticatedSuppliesRouteImport.update({
+  id: '/supplies',
+  path: '/supplies',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedVectorizeRoute = AuthenticatedVectorizeRouteImport.update({
@@ -171,9 +189,12 @@ export interface FileRoutesByFullPath {
   '/halftone': typeof AuthenticatedHalftoneRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
+  '/pricing': typeof AuthenticatedPricingRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supplies': typeof AuthenticatedSuppliesRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
@@ -196,9 +217,12 @@ export interface FileRoutesByTo {
   '/halftone': typeof AuthenticatedHalftoneRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
+  '/pricing': typeof AuthenticatedPricingRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/quality': typeof AuthenticatedQualityRoute
+  '/quotes': typeof AuthenticatedQuotesRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/supplies': typeof AuthenticatedSuppliesRoute
   '/vectorize': typeof AuthenticatedVectorizeRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
@@ -223,9 +247,12 @@ export interface FileRoutesById {
   '/_authenticated/halftone': typeof AuthenticatedHalftoneRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
+  '/_authenticated/pricing': typeof AuthenticatedPricingRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/quality': typeof AuthenticatedQualityRoute
+  '/_authenticated/quotes': typeof AuthenticatedQuotesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/supplies': typeof AuthenticatedSuppliesRoute
   '/_authenticated/vectorize': typeof AuthenticatedVectorizeRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/g/$token': typeof GTokenRoute
@@ -250,9 +277,12 @@ export interface FileRouteTypes {
     | '/halftone'
     | '/orders'
     | '/portfolio'
+    | '/pricing'
     | '/projects'
     | '/quality'
+    | '/quotes'
     | '/settings'
+    | '/supplies'
     | '/vectorize'
     | '/api/generate-image'
     | '/g/$token'
@@ -275,9 +305,12 @@ export interface FileRouteTypes {
     | '/halftone'
     | '/orders'
     | '/portfolio'
+    | '/pricing'
     | '/projects'
     | '/quality'
+    | '/quotes'
     | '/settings'
+    | '/supplies'
     | '/vectorize'
     | '/api/generate-image'
     | '/g/$token'
@@ -301,9 +334,12 @@ export interface FileRouteTypes {
     | '/_authenticated/halftone'
     | '/_authenticated/orders'
     | '/_authenticated/portfolio'
+    | '/_authenticated/pricing'
     | '/_authenticated/projects'
     | '/_authenticated/quality'
+    | '/_authenticated/quotes'
     | '/_authenticated/settings'
+    | '/_authenticated/supplies'
     | '/_authenticated/vectorize'
     | '/api/generate-image'
     | '/g/$token'
@@ -439,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortfolioRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/pricing': {
+      id: '/_authenticated/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof AuthenticatedPricingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/projects': {
       id: '/_authenticated/projects'
       path: '/projects'
@@ -453,11 +496,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQualityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/quotes': {
+      id: '/_authenticated/quotes'
+      path: '/quotes'
+      fullPath: '/quotes'
+      preLoaderRoute: typeof AuthenticatedQuotesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/supplies': {
+      id: '/_authenticated/supplies'
+      path: '/supplies'
+      fullPath: '/supplies'
+      preLoaderRoute: typeof AuthenticatedSuppliesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/vectorize': {
@@ -506,9 +563,12 @@ interface AuthenticatedRouteChildren {
   AuthenticatedHalftoneRoute: typeof AuthenticatedHalftoneRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
+  AuthenticatedPricingRoute: typeof AuthenticatedPricingRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedQualityRoute: typeof AuthenticatedQualityRoute
+  AuthenticatedQuotesRoute: typeof AuthenticatedQuotesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSuppliesRoute: typeof AuthenticatedSuppliesRoute
   AuthenticatedVectorizeRoute: typeof AuthenticatedVectorizeRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
@@ -528,9 +588,12 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedHalftoneRoute: AuthenticatedHalftoneRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
+  AuthenticatedPricingRoute: AuthenticatedPricingRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedQualityRoute: AuthenticatedQualityRoute,
+  AuthenticatedQuotesRoute: AuthenticatedQuotesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSuppliesRoute: AuthenticatedSuppliesRoute,
   AuthenticatedVectorizeRoute: AuthenticatedVectorizeRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
 }

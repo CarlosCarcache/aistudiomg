@@ -276,7 +276,10 @@ export type Database = {
           payment_method: string | null
           price: number | null
           project_id: string | null
+          quote_share_id: string | null
+          quote_status: "solicitada" | "enviada" | "aceptada" | "denegada" | "rechazada" | null
           quantity: number
+          request_type: "order" | "quote"
           selected_images: Json | null
           status: Database["public"]["Enums"]["order_status"]
           title: string
@@ -297,7 +300,10 @@ export type Database = {
           payment_method?: string | null
           price?: number | null
           project_id?: string | null
+          quote_share_id?: string | null
+          quote_status?: "solicitada" | "enviada" | "aceptada" | "denegada" | "rechazada" | null
           quantity?: number
+          request_type?: "order" | "quote"
           selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
@@ -318,7 +324,10 @@ export type Database = {
           payment_method?: string | null
           price?: number | null
           project_id?: string | null
+          quote_share_id?: string | null
+          quote_status?: "solicitada" | "enviada" | "aceptada" | "denegada" | "rechazada" | null
           quantity?: number
+          request_type?: "order" | "quote"
           selected_images?: Json | null
           status?: Database["public"]["Enums"]["order_status"]
           title?: string
@@ -352,6 +361,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_quote_share_id_fkey"
+            columns: ["quote_share_id"]
+            isOneToOne: false
+            referencedRelation: "gallery_shares"
             referencedColumns: ["id"]
           },
         ]
@@ -391,6 +407,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          manual_discount_pct: number | null
           name: string
           price: number | null
           updated_at: string
@@ -403,6 +420,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          manual_discount_pct?: number | null
           name: string
           price?: number | null
           updated_at?: string
@@ -415,6 +433,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          manual_discount_pct?: number | null
           name?: string
           price?: number | null
           updated_at?: string
@@ -426,6 +445,93 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplies: {
+        Row: {
+          category_id: string
+          created_at: string
+          id: string
+          name: string
+          package_cost: number
+          package_quantity: number
+          unit_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          id?: string
+          name: string
+          package_cost: number
+          package_quantity: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          package_cost?: number
+          package_quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplies_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_recipes: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity_used: number
+          supply_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity_used: number
+          supply_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity_used?: number
+          supply_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_recipes_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supplies"
             referencedColumns: ["id"]
           },
         ]
@@ -597,6 +703,34 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      create_shared_gallery_order_quote: {
+        Args: {
+          _client_name: string
+          _image_ids: string[]
+          _notes: string
+          _phone: string
+          _token: string
+        }
+        Returns: string
+      }
+      get_shared_quotes: {
+        Args: { _token: string }
+        Returns: {
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          notes: string | null
+          price: number | null
+          quantity: number
+          quote_status: "solicitada" | "enviada" | "aceptada" | "denegada" | "rechazada"
+          title: string
+        }[]
+      }
+      respond_to_shared_quote: {
+        Args: { _accept: boolean; _order_id: string; _token: string }
+        Returns: undefined
       }
       has_perm: {
         Args: { _action: string; _module: string; _user_id: string }
