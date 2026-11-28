@@ -153,7 +153,7 @@ function CatalogPage() {
       setCategories((c) => c.filter((x) => x.id !== id));
       toast.success("Categoría eliminada");
     } catch {
-      toast.error("No se pudo eliminar (¿tiene productos asociados?)");
+      toast.error("No se pudo eliminar (¿tiene insumos asociados?)");
     }
   };
 
@@ -322,7 +322,7 @@ function CatalogPage() {
           if (!isOpen) resetProductForm();
         }}
       >
-        <div className="hidden">
+        <div className="flex justify-end">
           <Button
             onClick={() => {
               if (!perm.guard("create")) return;

@@ -7,6 +7,7 @@ export const ordersController = {
     const { data, error } = await supabase
       .from("orders")
       .select("*")
+      .or("quote_status.is.null,quote_status.eq.aceptada")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
@@ -17,9 +18,44 @@ export const ordersController = {
       .from("orders")
       .select("*")
       .eq("client_id", clientId)
+      .or("quote_status.is.null,quote_status.eq.aceptada")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return data ?? [];
+  },
+
+  async listQuotes(): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .not("quote_status", "is", null)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async sendQuote(id: string, price: number, currency: string): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ quote_status: "enviada", price, currency })
+      .eq("id", id)
+      .eq("quote_status", "solicitada")
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async denyQuote(id: string): Promise<Order> {
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ quote_status: "denegada" })
+      .eq("id", id)
+      .eq("quote_status", "solicitada")
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async create(input: NewOrder): Promise<Order> {
