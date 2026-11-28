@@ -31,6 +31,8 @@ import {
 const MODULES = [
   { key: "projects", label: "Proyectos" },
   { key: "orders", label: "Pedidos" },
+  { key: "quotes", label: "Cotizaciones" },
+  { key: "supplies", label: "Insumos" },
   { key: "clients", label: "Clientes" },
   { key: "employees", label: "Empleados" },
   { key: "catalog", label: "Catálogo" },

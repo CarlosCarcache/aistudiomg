@@ -2,17 +2,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const ROLES = ["admin", "editor", "viewer"] as const;
 
-async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .maybeSingle();
+async function assertAdmin(client: SupabaseClient<Database>, userId: string) {
+  const { data, error } = await client.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error("No se pudo verificar permisos");
   if (!data) throw new Error("Solo administradores pueden realizar esta acción");
 }
@@ -20,7 +16,8 @@ async function assertAdmin(userId: string) {
 export const listUsersWithRoles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: authList, error: authErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
@@ -64,7 +61,8 @@ export const setUserRole = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Evita que un admin se quite a sí mismo el último rol admin
     if (data.action === "remove" && data.role === "admin" && data.userId === context.userId) {
@@ -95,6 +93,8 @@ export const setUserRole = createServerFn({ method: "POST" })
 export const MODULES = [
   "projects",
   "orders",
+  "quotes",
+  "supplies",
   "clients",
   "employees",
   "catalog",
@@ -119,7 +119,8 @@ export const createUser = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = `${data.username.toLowerCase()}@app.local`;
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -142,7 +143,8 @@ export const setUserPassword = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       password: data.password,
     });
@@ -154,7 +156,8 @@ export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.userId === context.userId) throw new Error("No puedes eliminarte a ti mismo");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error("No se pudo eliminar el usuario");
@@ -165,7 +168,8 @@ export const getUserPermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("user_permissions")
       .select("module, can_create, can_read, can_update, can_delete")
@@ -188,7 +192,8 @@ export const saveUserPermissions = createServerFn({ method: "POST" })
     z.object({ userId: z.string().uuid(), permissions: z.array(permSchema) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = data.permissions.map((p) => ({ ...p, user_id: data.userId }));
     const { error } = await supabaseAdmin
       .from("user_permissions")

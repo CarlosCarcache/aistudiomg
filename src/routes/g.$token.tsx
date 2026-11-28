@@ -1,10 +1,10 @@
-﻿// Ruta pÃºblica: galerÃ­a compartida por enlace seguro (solo lectura + cotizaciÃ³n).
+// Ruta pública: galería compartida por enlace seguro (solo lectura + cotización).
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { galleryController } from "@/controllers/gallery.controller";
 import { getSharedGallery, submitSharedQuote } from "@/lib/shared-gallery.functions";
 import { MAX_SHARED_QUOTE_IMAGE_SIZE, sharedQuoteSchema } from "@/lib/shared-order";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Check, Download, Images, Loader2, RefreshCw, Send, X } from "lucide-react";
 import { toast } from "sonner";
@@ -28,15 +28,15 @@ export const Route = createFileRoute("/g/$token")({
   component: PublicGalleryPage,
   head: () => ({
     meta: [
-      { title: "GalerÃ­a del cliente | AI Studio MG" },
+      { title: "Galería del cliente | AI Studio MG" },
       {
         name: "description",
-        content: "GalerÃ­a privada compartida por AI Studio MG mediante enlace seguro.",
+        content: "Galería privada compartida por AI Studio MG mediante enlace seguro.",
       },
-      { property: "og:title", content: "GalerÃ­a del cliente | AI Studio MG" },
+      { property: "og:title", content: "Galería del cliente | AI Studio MG" },
       {
         property: "og:description",
-        content: "Revisa las imÃ¡genes que el estudio compartiÃ³ contigo y solicita una cotizaciÃ³n.",
+        content: "Revisa las imágenes que el estudio compartió contigo y solicita una cotización.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -81,6 +81,43 @@ function PublicGalleryPage() {
   const [preparing, setPreparing] = useState(false);
   const [notes, setNotes] = useState("");
   const [upload, setUpload] = useState<UploadedImage | null>(null);
+  const [quotes, setQuotes] = useState<SharedQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(true);
+  const [quotesError, setQuotesError] = useState(false);
+  const [respondingQuote, setRespondingQuote] = useState<string | null>(null);
+
+  const refreshQuotes = useCallback(async () => {
+    setQuotesLoading(true);
+    setQuotesError(false);
+    try {
+      setQuotes(await galleryController.listSharedQuotes(token));
+    } catch {
+      setQuotesError(true);
+    } finally {
+      setQuotesLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    let active = true;
+    setQuotes([]);
+    setQuotesLoading(true);
+    setQuotesError(false);
+    galleryController
+      .listSharedQuotes(token)
+      .then((rows) => {
+        if (active) setQuotes(rows);
+      })
+      .catch(() => {
+        if (active) setQuotesError(true);
+      })
+      .finally(() => {
+        if (active) setQuotesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   useEffect(() => {
     let active = true;
@@ -160,13 +197,14 @@ function PublicGalleryPage() {
     setSending(true);
     try {
       await sendQuote({ data: { token, ...validated.data } });
-      toast.success("CotizaciÃ³n enviada al estudio");
+      toast.success("Cotización enviada al estudio");
       setOpen(false);
       setSelected(new Set());
       setNotes("");
       setUpload(null);
+      await refreshQuotes();
     } catch {
-      toast.error("No se pudo enviar la cotizaciÃ³n, intenta de nuevo");
+      toast.error("No se pudo enviar la cotización, intenta de nuevo");
     } finally {
       setSending(false);
     }
@@ -178,7 +216,9 @@ function PublicGalleryPage() {
     try {
       await galleryController.respondToSharedQuote(token, quote.id, accept);
       await refreshQuotes();
-      toast.success(accept ? "CotizaciÃ³n aceptada; tu pedido estÃ¡ en proceso" : "CotizaciÃ³n rechazada");
+      toast.success(
+        accept ? "Cotización aceptada; tu pedido está en proceso" : "Cotización rechazada",
+      );
     } catch {
       toast.error("No se pudo registrar tu respuesta");
     } finally {
@@ -190,14 +230,14 @@ function PublicGalleryPage() {
     <div className="min-h-screen bg-background">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-6">
         <div>
-          <h1 className="text-lg font-semibold">GalerÃ­a del cliente</h1>
+          <h1 className="text-lg font-semibold">Galería del cliente</h1>
           <p className="text-xs text-muted-foreground">
-            Elige imÃ¡genes compartidas o adjunta una referencia para cotizar
+            Elige imágenes compartidas o adjunta una referencia para cotizar
           </p>
         </div>
         <Button onClick={() => setOpen(true)} disabled={loading || error || !savedClient}>
           <Send className="h-4 w-4" />
-          Solicitar cotizaciÃ³n{selected.size > 0 ? ` (${selected.size})` : ""}
+          Solicitar cotización{selected.size > 0 ? ` (${selected.size})` : ""}
         </Button>
       </header>
       <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
@@ -208,13 +248,13 @@ function PublicGalleryPage() {
         ) : error ? (
           <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
             <Images className="h-10 w-10 text-muted-foreground" />
-            <p className="mt-3 text-sm text-muted-foreground">El enlace no es vÃ¡lido o expirÃ³.</p>
+            <p className="mt-3 text-sm text-muted-foreground">El enlace no es válido o expiró.</p>
           </div>
         ) : images.length === 0 ? (
           <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
             <Images className="h-10 w-10 text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">
-              No hay imÃ¡genes compartidas, pero puedes adjuntar una para solicitar tu cotizaciÃ³n.
+              No hay imágenes compartidas, pero puedes adjuntar una para solicitar tu cotización.
             </p>
           </div>
         ) : (
@@ -281,44 +321,81 @@ function PublicGalleryPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold">Mis cotizaciones</h2>
-              <p className="text-sm text-muted-foreground">Consulta los precios enviados por el estudio y responde desde aquÃ­.</p>
+              <p className="text-sm text-muted-foreground">
+                Consulta los precios enviados por el estudio y responde desde aquí.
+              </p>
             </div>
-            <Button variant="outline" size="icon" onClick={() => void refreshQuotes()} disabled={quotesLoading} aria-label="Actualizar cotizaciones" title="Actualizar cotizaciones">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => void refreshQuotes()}
+              disabled={quotesLoading}
+              aria-label="Actualizar cotizaciones"
+              title="Actualizar cotizaciones"
+            >
               <RefreshCw className={`h-4 w-4 ${quotesLoading ? "animate-spin" : ""}`} />
             </Button>
           </div>
           {quotesLoading ? (
-            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando cotizaciones...</div>
+            <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando cotizaciones...
+            </div>
+          ) : quotesError ? (
+            <p className="py-4 text-sm text-destructive">
+              No se pudieron cargar tus cotizaciones. Intenta actualizar.
+            </p>
           ) : quotes.length === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">AÃºn no tienes cotizaciones.</p>
+            <p className="py-4 text-sm text-muted-foreground">Aún no tienes cotizaciones.</p>
           ) : (
             <div className="divide-y divide-border border-y border-border">
               {quotes.map((quote) => {
-                const statusText = quote.quote_status === "solicitada"
-                  ? "Solicitud recibida"
-                  : quote.quote_status === "enviada"
-                    ? "Esperando tu respuesta"
-                    : quote.quote_status === "aceptada"
-                      ? "Aceptada Â· pedido en proceso"
-                      : quote.quote_status === "denegada"
-                        ? "El estudio no pudo aceptar la solicitud"
-                        : "Rechazaste el precio";
+                const statusText =
+                  quote.quote_status === "solicitada"
+                    ? "Solicitud recibida"
+                    : quote.quote_status === "enviada"
+                      ? "Esperando tu respuesta"
+                      : quote.quote_status === "aceptada"
+                        ? "Aceptada · pedido en proceso"
+                        : quote.quote_status === "denegada"
+                          ? "El estudio no pudo aceptar la solicitud"
+                          : "Rechazaste el precio";
                 const busy = respondingQuote === quote.id;
                 return (
-                  <article key={quote.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <article
+                    key={quote.id}
+                    className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div className="min-w-0 space-y-1">
                       <h3 className="font-medium">{quote.title}</h3>
-                      {quote.description && <p className="text-sm text-muted-foreground">{quote.description}</p>}
-                      {quote.price != null && <p className="text-lg font-semibold">{formatMoney(quote.price, quote.currency)}</p>}
-                      <p className="text-xs text-muted-foreground">{statusText} Â· {new Date(quote.created_at).toLocaleDateString()}</p>
+                      {quote.description && (
+                        <p className="text-sm text-muted-foreground">{quote.description}</p>
+                      )}
+                      {quote.price != null && (
+                        <p className="text-lg font-semibold">
+                          {formatMoney(quote.price, quote.currency)}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {statusText} · {new Date(quote.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                     {quote.quote_status === "enviada" && (
                       <div className="flex shrink-0 gap-2">
                         <Button disabled={busy} onClick={() => void respondToQuote(quote, true)}>
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                          {busy ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                           Aceptar precio
                         </Button>
-                        <Button variant="outline" disabled={busy} onClick={() => void respondToQuote(quote, false)}>Rechazar</Button>
+                        <Button
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => void respondToQuote(quote, false)}
+                        >
+                          Rechazar
+                        </Button>
                       </div>
                     )}
                   </article>
@@ -332,9 +409,9 @@ function PublicGalleryPage() {
       <Dialog open={open} onOpenChange={(nextOpen) => !sending && setOpen(nextOpen)}>
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Solicitar cotizaciÃ³n</DialogTitle>
+            <DialogTitle>Solicitar cotización</DialogTitle>
             <DialogDescription>
-              Tus datos registrados se adjuntan automÃ¡ticamente y no se pueden editar.
+              Tus datos registrados se adjuntan automáticamente y no se pueden editar.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -351,7 +428,7 @@ function PublicGalleryPage() {
                 <Input id="quote-client-name" value={clientName} readOnly aria-readonly="true" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="quote-client-phone">TelÃ©fono registrado</Label>
+                <Label htmlFor="quote-client-phone">Teléfono registrado</Label>
                 <Input
                   id="quote-client-phone"
                   value={savedClient?.phone || "No registrado"}
@@ -379,10 +456,10 @@ function PublicGalleryPage() {
                 onChange={chooseImage}
                 disabled={preparing || sending}
               />
-              <p className="text-xs text-muted-foreground">JPG, PNG o WEBP Â· mÃ¡ximo 5 MB</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG o WEBP · máximo 5 MB</p>
               {preparing && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Preparando imagenâ€¦
+                  <Loader2 className="h-4 w-4 animate-spin" /> Preparando imagen…
                 </p>
               )}
               {upload && (
@@ -408,7 +485,7 @@ function PublicGalleryPage() {
 
             {selectedImages.length > 0 && (
               <div className="space-y-2">
-                <Label>ImÃ¡genes compartidas seleccionadas</Label>
+                <Label>Imágenes compartidas seleccionadas</Label>
                 <ul className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-border p-3 text-sm">
                   {selectedImages.map((image) => (
                     <li key={image.id} className="flex items-center gap-3">
@@ -428,7 +505,7 @@ function PublicGalleryPage() {
             )}
 
             <p className="text-sm text-muted-foreground">
-              Puedes usar una imagen propia, imÃ¡genes compartidas o ambas. El estudio confirmarÃ¡ el
+              Puedes usar una imagen propia, imágenes compartidas o ambas. El estudio confirmará el
               precio.
             </p>
             <div className="space-y-2">
@@ -438,7 +515,7 @@ function PublicGalleryPage() {
                 maxLength={1000}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                placeholder="Cantidades, tamaÃ±os, colores, fecha deseadaâ€¦"
+                placeholder="Cantidades, tamaños, colores, fecha deseada…"
                 rows={4}
               />
             </div>
@@ -454,7 +531,7 @@ function PublicGalleryPage() {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Enviar cotizaciÃ³n
+              Enviar cotización
             </Button>
           </DialogFooter>
         </DialogContent>

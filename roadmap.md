@@ -10,3 +10,7 @@
 - [x] Corregir y probar las imágenes de carpetas compartidas desde Proyectos
 - [ ] Agregar solicitud de cotización con datos guardados del cliente no editables e imagen propia o compartida
 - [ ] Verificar recepción de la cotización y su imagen en Pedidos
+
+- [ ] Adaptar cambios disponibles de main: insumos, recetas y ciclo de cotizaciones
+- [ ] Aplicar y verificar migraciones faltantes; probar solicitud, precio y respuesta del cliente
+- [ ] Guardar adaptaciones y documentar límite de sincronización remota

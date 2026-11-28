@@ -18,7 +18,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/quotes")({
   component: QuotesPage,
-  head: () => ({ meta: [{ title: "Cotizaciones | AI Studio MG" }] }),
+  head: () => ({
+    meta: [
+      { title: "Cotizaciones | AI Studio MG" },
+      {
+        name: "description",
+        content: "Gestiona solicitudes y precios enviados a los clientes de AI Studio MG.",
+      },
+      { property: "og:title", content: "Cotizaciones | AI Studio MG" },
+      {
+        property: "og:description",
+        content: "Gestiona solicitudes y precios enviados a los clientes de AI Studio MG.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 type QuoteTab = "solicitadas" | "esperando" | "cerradas";

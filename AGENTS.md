@@ -8,3 +8,7 @@
 - Apply new database changes through Drizzle migrations; legacy Supabase files are historical, not an alternative deploy path.
 - Enforce module permissions with restrictive database policies alongside ownership policies, so permissive policies cannot bypass denied actions.
 - Keep managed/generated files out of style lint; generators own their formatting.
+
+- Store quote lifecycle and share capability on orders; shared functions must bind the exact share ID so multiple links cannot expose unrelated requests.
+- Store supplies and product recipes separately, with generated unit costs and same-category validation, to reuse catalog taxonomy and avoid stale calculations.
+- Verify administrative roles with the authenticated client before dynamically importing the privileged client in each handler; this keeps privileged modules out of browser bundles.

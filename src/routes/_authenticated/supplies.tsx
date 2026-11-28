@@ -33,7 +33,22 @@ import {
 
 export const Route = createFileRoute("/_authenticated/supplies")({
   component: SuppliesPage,
-  head: () => ({ meta: [{ title: "Insumos | AI Studio MG" }] }),
+  head: () => ({
+    meta: [
+      { title: "Insumos | AI Studio MG" },
+      {
+        name: "description",
+        content: "Gestiona materias primas y costos unitarios por categoría en AI Studio MG.",
+      },
+      { property: "og:title", content: "Insumos | AI Studio MG" },
+      {
+        property: "og:description",
+        content: "Gestiona materias primas y costos unitarios por categoría en AI Studio MG.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 const emptyForm = {
@@ -102,7 +117,7 @@ function SuppliesPage() {
       return toast.error("El costo debe ser igual o mayor que cero");
     if (!Number.isFinite(packageQuantity) || packageQuantity <= 0)
       return toast.error("La cantidad del paquete debe ser mayor que cero");
-    if (!user && !editingId) return toast.error("Inicia sesión para registrar insumos");
+    if (!user) return toast.error("Inicia sesión para registrar insumos");
 
     setSaving(true);
     try {
@@ -114,7 +129,7 @@ function SuppliesPage() {
       };
       const saved = editingId
         ? await inventoryController.updateSupply(editingId, payload)
-        : await inventoryController.createSupply({ ...payload, user_id: user!.id });
+        : await inventoryController.createSupply({ ...payload, user_id: user.id });
       setSupplies((current) =>
         editingId
           ? current.map((item) => (item.id === saved.id ? saved : item))

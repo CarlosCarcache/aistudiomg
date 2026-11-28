@@ -29,6 +29,8 @@ const TABLES = [
   { key: "employees", label: "Empleados" },
   { key: "orders", label: "Pedidos" },
   { key: "products", label: "Productos" },
+  { key: "supplies", label: "Insumos" },
+  { key: "product_recipes", label: "Recetas" },
   { key: "product_categories", label: "Categorías" },
   { key: "projects", label: "Proyectos" },
   { key: "gallery_images", label: "Galería" },

@@ -71,6 +71,20 @@
       "when": 1795569321436,
       "tag": "0009_shared_quotes_cross_owner_client",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795836799902,
+      "tag": "0010_adapt_main_inventory_and_quote_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795836855123,
+      "tag": "0011_bind_quotes_to_exact_share",
+      "breakpoints": true
     }
   ]
 }

@@ -38,7 +38,22 @@ import {
 
 export const Route = createFileRoute("/_authenticated/pricing")({
   component: SuggestedPricingPage,
-  head: () => ({ meta: [{ title: "Precio sugerido | AI Studio MG" }] }),
+  head: () => ({
+    meta: [
+      { title: "Precio sugerido | AI Studio MG" },
+      {
+        name: "description",
+        content: "Calcula costos de recetas y precios sugeridos de productos en AI Studio MG.",
+      },
+      { property: "og:title", content: "Precio sugerido | AI Studio MG" },
+      {
+        property: "og:description",
+        content: "Calcula costos de recetas y precios sugeridos de productos en AI Studio MG.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
 
 function SuggestedPricingPage() {
