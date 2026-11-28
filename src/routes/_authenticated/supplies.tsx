@@ -314,7 +314,10 @@ function SuppliesPage() {
                       {formatMoney(supply.package_cost, "NIO")} / {supply.package_quantity}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {formatMoney(supply.unit_cost, "NIO")}
+                      {formatMoney(
+                        supply.unit_cost ?? supply.package_cost / supply.package_quantity,
+                        "NIO",
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

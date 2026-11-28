@@ -120,7 +120,12 @@ function SuggestedPricingPage() {
 
   const unitCost = productRecipes.reduce((total, recipe) => {
     const supply = supplyById[recipe.supply_id];
-    return total + (supply ? supply.unit_cost * recipe.quantity_used : 0);
+    return (
+      total +
+      (supply
+        ? (supply.unit_cost ?? supply.package_cost / supply.package_quantity) * recipe.quantity_used
+        : 0)
+    );
   }, 0);
   const quantity = Math.max(1, Number(orderQuantity) || 1);
   const discountInputValid =
@@ -329,7 +334,12 @@ function SuggestedPricingPage() {
                           return (
                             <TableRow key={recipe.id}>
                               <TableCell className="font-medium">{supply.name}</TableCell>
-                              <TableCell>{formatMoney(supply.unit_cost, "NIO")}</TableCell>
+                              <TableCell>
+                                {formatMoney(
+                                  supply.unit_cost ?? supply.package_cost / supply.package_quantity,
+                                  "NIO",
+                                )}
+                              </TableCell>
                               <TableCell className="w-36">
                                 <Input
                                   type="number"
@@ -347,7 +357,9 @@ function SuggestedPricingPage() {
                               </TableCell>
                               <TableCell className="text-right font-medium">
                                 {formatMoney(
-                                  supply.unit_cost * (Number.isFinite(used) ? used : 0),
+                                  (supply.unit_cost ??
+                                    supply.package_cost / supply.package_quantity) *
+                                    (Number.isFinite(used) ? used : 0),
                                   "NIO",
                                 )}
                               </TableCell>
@@ -393,7 +405,12 @@ function SuggestedPricingPage() {
                           <SelectItem value="none">Selecciona un insumo</SelectItem>
                           {categorySupplies.map((supply) => (
                             <SelectItem key={supply.id} value={supply.id}>
-                              {supply.name} · {formatMoney(supply.unit_cost, "NIO")}/u
+                              {supply.name} ·{" "}
+                              {formatMoney(
+                                supply.unit_cost ?? supply.package_cost / supply.package_quantity,
+                                "NIO",
+                              )}
+                              /u
                             </SelectItem>
                           ))}
                         </SelectContent>
